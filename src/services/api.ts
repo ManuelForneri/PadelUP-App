@@ -1,113 +1,90 @@
-// frontend/src/services/api.ts
-import axios from "axios";
-import * as SecureStore from "expo-secure-store";
-import Constants from "expo-constants";
+import axios, { AxiosRequestConfig, AxiosError } from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
-// Determinar la URL base según el entorno
+// Configuración de la API
 const API_URL = __DEV__
-  ? "http://192.168.100.5:5000/api" // Usando la IP local
-  : "https://tudominio.com/api"; // URL de producción
+  ? 'https://padelsag-back.onrender.com/api' // Desarrollo
+  : 'https://padelsag-back.onrender.com/api'; // Producción
 
-console.log("Configurando API con URL:", API_URL);
+console.log('Configurando API con URL:', API_URL);
 
+// Tiempos de espera en milisegundos
+const TIMEOUTS = {
+  default: 30000, // 30 segundos para peticiones normales
+  upload: 60000, // 60 segundos para subida de archivos
+};
+
+// Crear instancia de Axios
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // Aumentar el timeout para peticiones con imágenes
+  timeout: TIMEOUTS.default,
   headers: {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
 
-// Configuración global de Axios para manejar CORS
-axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
-axios.defaults.headers.common['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,PATCH,OPTIONS';
-axios.defaults.headers.common['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Authorization';
-
-// Interceptor para manejar las peticiones salientes
+// Interceptor para agregar token de autenticación
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Agregar token de autenticación si existe
-      const token = await SecureStore.getItemAsync("userToken");
+      const token = await SecureStore.getItemAsync('userToken');
       if (token) {
+        config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
-
-      // Manejar FormData para subida de archivos
-      if (config.data instanceof FormData) {
-        // Eliminar Content-Type para que Axios lo establezca automáticamente con el boundary correcto
-        delete config.headers['Content-Type'];
-        
-        // Configuración específica para FormData
-        config.transformRequest = (data, headers) => {
-          // No modificar los headers aquí, Axios los manejará automáticamente
-          return data;
-        };
-      }
-
-      // Log de la petición para depuración
-      console.log(`[${config.method?.toUpperCase()}] ${config.baseURL}${config.url}`);
-      if (config.data && !(config.data instanceof FormData)) {
-        console.log('Datos enviados:', config.data);
-      } else if (config.data instanceof FormData) {
-        console.log('Enviando FormData con archivo adjunto');
-      }
-
       return config;
     } catch (error) {
-      console.error('Error en el interceptor de solicitud:', error);
+      console.error('Error al configurar la petición:', error);
       return Promise.reject(error);
     }
   },
   (error) => {
-    console.error('Error en la configuración de la petición:', error);
+    console.error('Error en la petición:', error);
     return Promise.reject(error);
   }
 );
 
-// Interceptor para manejar las respuestas
+// Interceptor para manejar respuestas de error
 api.interceptors.response.use(
-  (response) => {
-    console.log(`[${response.status}] ${response.config.url}`, response.data);
-    return response;
-  },
-  (error) => {
-    console.error('Error en la respuesta:', {
-      message: error.message,
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      request: error.request ? 'Request made but no response received' : 'Error setting up request'
-    });
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor para manejar respuestas y errores
-api.interceptors.response.use(
-  (response) => {
-    console.log("Respuesta recibida de:", response.config.url, response.status);
-    return response;
-  },
-  async (error) => {
-    console.error("Error en la respuesta:", {
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
-
+  (response) => response,
+  (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expirado o inválido
-      await SecureStore.deleteItemAsync("userToken");
-      await SecureStore.deleteItemAsync("userData");
-      // Opcional: Redirigir al login
+      // Limpiar datos de autenticación
+      SecureStore.deleteItemAsync('userToken').catch(console.error);
+      SecureStore.deleteItemAsync('userData').catch(console.error);
     }
-
     return Promise.reject(error);
   }
 );
 
+// Funciones auxiliares para métodos HTTP
+const http = {
+  get: <T = any>(url: string, config?: AxiosRequestConfig) => 
+    api.get<T>(url, config).then(response => response.data),
+  
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => 
+    api.post<T>(url, data, config).then(response => response.data),
+  
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => 
+    api.put<T>(url, data, config).then(response => response.data),
+  
+  delete: <T = any>(url: string, config?: AxiosRequestConfig) => 
+    api.delete<T>(url, config).then(response => response.data),
+  
+  upload: <T = any>(
+    url: string, 
+    data: FormData, 
+    onUploadProgress?: (progressEvent: ProgressEvent) => void
+  ) => {
+    const config: AxiosRequestConfig = {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: onUploadProgress as any,
+      timeout: TIMEOUTS.upload,
+    };
+    return api.post<T>(url, data, config).then(response => response.data);
+  },
+};
+
+export { http };
 export default api;

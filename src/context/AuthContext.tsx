@@ -12,6 +12,7 @@ interface User {
   level?: string;
   hand?: string;
   position?: string;
+  profileImage?: string;
 }
 
 interface AuthContextData {
@@ -19,7 +20,10 @@ interface AuthContextData {
   token: string | null;
   isLoading: boolean;
   login: (usernameOrEmail: string, password: string) => Promise<void>;
-  register: (userData: any) => Promise<void>;
+  register: (userData: any) => Promise<{
+    token: string;
+    user: User;
+  }>;
   logout: () => Promise<void>;
 }
 
@@ -76,19 +80,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // En el método register del AuthContext
   const register = async (userData: any) => {
     try {
       console.log('Iniciando proceso de registro...');
       const formData = new FormData();
 
-      // Agregar campos de texto
-      const { profileImage, repeatPassword, ...userFields } = userData;
-      console.log('Campos de texto a enviar:', userFields);
+      // Agregar campos de texto (incluyendo repeatPassword)
+      const { profileImage, ...userFields } = userData;
+      console.log('Campos a enviar:', userFields);
       
       // Agregar campos de texto al formData
       Object.entries(userFields).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
+          // Asegurarse de que las contraseñas no se registren en los logs
+          const safeValue = key.toLowerCase().includes('password') ? '***' : String(value);
+          console.log(`Agregando campo: ${key} = ${safeValue}`);
           formData.append(key, String(value));
         }
       });
@@ -117,28 +123,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       console.log('Enviando datos de registro al servidor...');
       
-      // Realizar la petición
+      // Realizar la petición usando el helper http.upload que ya maneja el Content-Type correctamente
       const response = await api.post("/auth/register", formData, {
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'multipart/form-data',
         },
       });
 
       console.log('Respuesta del servidor recibida:', response.data);
 
-      const { token, user } = response.data;
+      if (response.data.token && response.data.user) {
+        const { token, user } = response.data;
+        
+        console.log('Datos del usuario recibidos:', user);
+        console.log('URL de la imagen de perfil recibida:', user.profileImage);
+        
+        // Crear objeto de usuario con todos los campos necesarios
+        const userData = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          category: user.category,
+          level: user.level,
+          hand: user.hand,
+          position: user.position,
+          profileImage: user.profileImage
+        };
+        
+        // Guardar token y datos del usuario
+        await SecureStore.setItemAsync("userToken", token);
+        await SecureStore.setItemAsync("userData", JSON.stringify(userData));
 
-      // Guardar token y datos del usuario
-      await SecureStore.setItemAsync("userToken", token);
-      await SecureStore.setItemAsync("userData", JSON.stringify(user));
-
-      // Configurar el token en las cabeceras de las peticiones futuras
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      setToken(token);
-      setUser(user);
-      
-      return response.data;
+        // Configurar el token en las cabeceras de las peticiones futuras
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        setToken(token);
+        setUser(userData);
+        
+        return { token, user: userData };
+      } else {
+        throw new Error('Respuesta del servidor incompleta');
+      }
     } catch (error: any) {
       console.error('Error en el registro:', error);
       
@@ -149,6 +173,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // El servidor respondió con un estado de error
         console.error('Error del servidor:', error.response.data);
         errorMessage = error.response.data?.message || errorMessage;
+        
+        // Manejar errores de validación específicos
+        if (error.response.data?.errors) {
+          const validationErrors = Object.values(error.response.data.errors)
+            .flat()
+            .join('\n');
+          errorMessage = validationErrors || errorMessage;
+        }
       } else if (error.request) {
         // La petición se hizo pero no hubo respuesta
         console.error('No se recibió respuesta del servidor');
@@ -160,7 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       throw new Error(errorMessage);
-      throw error;
     }
   };
 

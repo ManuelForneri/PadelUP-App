@@ -30,9 +30,7 @@ const registerSchema = Yup.object().shape({
     .required("Nombre de usuario es requerido")
     .min(3, "Mínimo 3 caracteres")
     .max(20, "Máximo 20 caracteres"),
-  email: Yup.string()
-    .email("Email inválido")
-    .required("Email es requerido"),
+  email: Yup.string().email("Email inválido").required("Email es requerido"),
   password: Yup.string()
     .required("Contraseña es requerida")
     .min(6, "Mínimo 6 caracteres"),
@@ -52,55 +50,107 @@ const RegisterScreen = () => {
 
   const handleImagePick = async () => {
     try {
+      // Verificar permisos en iOS
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permiso requerido",
+          "Necesitamos acceso a tu galería para seleccionar una imagen de perfil."
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.5,
+        quality: 0.7,
+        base64: false,
+        exif: false,
       });
 
-      if (!result.canceled) {
-        setProfileImage(result.assets[0].uri);
+      if (result.canceled) {
+        console.log("Selección de imagen cancelada por el usuario");
+        return;
       }
-    } catch (error) {
+
+      if (!result.assets || result.assets.length === 0) {
+        throw new Error("No se pudo cargar la imagen seleccionada");
+      }
+
+      const selectedAsset = result.assets[0];
+
+      // Validar tamaño de la imagen (opcional, máximo 5MB)
+      if (selectedAsset.fileSize && selectedAsset.fileSize > 5 * 1024 * 1024) {
+        throw new Error(
+          "La imagen es demasiado grande. El tamaño máximo permitido es de 5MB."
+        );
+      }
+
+      console.log("Imagen seleccionada:", {
+        uri: selectedAsset.uri,
+        type: selectedAsset.type,
+        width: selectedAsset.width,
+        height: selectedAsset.height,
+        fileSize: selectedAsset.fileSize
+          ? `${Math.round(selectedAsset.fileSize / 1024)}KB`
+          : "desconocido",
+      });
+
+      setProfileImage(selectedAsset.uri);
+    } catch (error: any) {
       console.error("Error al seleccionar la imagen:", error);
-      Alert.alert("Error", "No se pudo seleccionar la imagen");
+      Alert.alert(
+        "Error",
+        error.message ||
+          "No se pudo seleccionar la imagen. Por favor, intenta de nuevo."
+      );
     }
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleRegister = async (values: any) => {
-    console.log('Intentando registrar con valores:', { ...values, profileImage });
+    if (isSubmitting) return; // Evitar múltiples envíos
+
+    setIsSubmitting(true);
+
+    console.log("Intentando registrar con valores:", {
+      ...values,
+      profileImage: profileImage ? "Imagen seleccionada" : "Sin imagen",
+    });
+
     try {
-      const response = await register({
+      const userData = {
         ...values,
         profileImage,
-      });
-      
-      console.log('Registro exitoso:', response);
-      
-      // Navegar a la pantalla principal después de un registro exitoso
-      // La navegación ahora se maneja en el AuthContext cuando se actualiza el estado del usuario
+      };
+
+      console.log("Enviando datos de registro...");
+      const response = await register(userData);
+
+      console.log("Registro exitoso:", response);
+
+      // Mostrar mensaje de éxito
+      Alert.alert(
+        "¡Registro exitoso!",
+        "Tu cuenta ha sido creada correctamente. Serás redirigido al inicio.",
+        [{ text: "Aceptar" }]
+      );
     } catch (error: any) {
-      console.error('Error en el registro:', error);
-      console.error('Detalles del error:', JSON.stringify(error, null, 2));
-      
-      let errorMessage = "Error al registrarse. Por favor, inténtalo de nuevo.";
-      
-      if (error.response) {
-        // Error de respuesta del servidor
-        console.error('Datos de la respuesta de error:', error.response.data);
-        errorMessage = error.response.data?.message || errorMessage;
-      } else if (error.request) {
-        // La petición se hizo pero no hubo respuesta
-        console.error('No se recibió respuesta del servidor');
-        errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a Internet.";
-      } else {
-        // Error al configurar la petición
-        console.error('Error al configurar la petición:', error.message);
-        errorMessage = error.message || errorMessage;
-      }
-      
-      Alert.alert("Error", errorMessage);
+      console.error("Error en el registro:", error);
+
+      // Mostrar mensaje de error detallado
+      Alert.alert(
+        "Error al registrarse",
+        error.message ||
+          "Ocurrió un error al intentar registrarse. Por favor, inténtalo de nuevo.",
+        [{ text: "Aceptar" }]
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -133,19 +183,40 @@ const RegisterScreen = () => {
           }) => (
             <View style={styles.formContainer}>
               {/* Selector de imagen de perfil */}
-              <TouchableOpacity
-                style={styles.imagePicker}
-                onPress={handleImagePick}
-              >
-                {profileImage ? (
-                  <Image
-                    source={{ uri: profileImage }}
-                    style={styles.profileImage}
-                  />
-                ) : (
-                  <Text style={styles.imagePickerText}>+ Foto de perfil</Text>
+              <View style={styles.imageUploadContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.imagePicker,
+                    isSubmitting && styles.disabledButton,
+                  ]}
+                  onPress={handleImagePick}
+                  disabled={isSubmitting}
+                >
+                  {profileImage ? (
+                    <Image
+                      source={{ uri: profileImage }}
+                      style={styles.profileImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.imagePlaceholder}>
+                      <Text style={styles.imagePickerText}>+</Text>
+                      <Text style={styles.imagePickerSubtext}>
+                        Foto de perfil
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                {profileImage && (
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={() => setProfileImage(null)}
+                    disabled={isSubmitting}
+                  >
+                    <Text style={styles.removeImageText}>×</Text>
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
+              </View>
 
               {/* Campos del formulario */}
               <TextInput
@@ -196,7 +267,9 @@ const RegisterScreen = () => {
               <TextInput
                 style={[
                   styles.input,
-                  errors.repeatPassword && touched.repeatPassword && styles.inputError,
+                  errors.repeatPassword &&
+                    touched.repeatPassword &&
+                    styles.inputError,
                 ]}
                 placeholder="Repetir contraseña"
                 secureTextEntry
@@ -298,10 +371,10 @@ const RegisterScreen = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
+    padding: 20,
   },
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#fff",
     justifyContent: "center",
   },
@@ -314,6 +387,11 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: "center",
   },
+  imageUploadContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+    position: "relative",
+  },
   imagePicker: {
     width: 120,
     height: 120,
@@ -321,17 +399,52 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    overflow: "hidden",
     alignSelf: "center",
     marginBottom: 20,
   },
+  disabledButton: {
+    opacity: 0.6,
+  },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: "100%",
+    height: "100%",
+  },
+  imagePlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   imagePickerText: {
+    fontSize: 24,
     color: "#666",
+    fontWeight: "bold",
+  },
+  imagePickerSubtext: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 5,
     textAlign: "center",
+  },
+  removeImageButton: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    backgroundColor: "#ff4444",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  removeImageText: {
+    color: "white",
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: "bold",
+    marginTop: -2,
   },
   input: {
     borderWidth: 1,
