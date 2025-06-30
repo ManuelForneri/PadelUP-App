@@ -47,7 +47,14 @@ api.interceptors.request.use(
 
 // Interceptor para manejar respuestas de error
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('Respuesta recibida:', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Limpiar datos de autenticación

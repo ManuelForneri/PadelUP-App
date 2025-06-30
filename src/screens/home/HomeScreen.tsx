@@ -1,173 +1,247 @@
-// frontend/src/screens/home/HomeScreen.tsx
 import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
-  Image,
+  ScrollView,
 } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../../../types";
+import { Ionicons } from "@expo/vector-icons";
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
 const HomeScreen = () => {
-  const { user, logout } = useAuth();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      Alert.alert("Error", "No se pudo cerrar la sesión");
-    }
-  };
+  // Datos de ejemplo
+  const courts = ["La Nueva Estacion", "El Fronton", "La Reserva"];
+  const tournaments = ["Copa Invierno", "Relámpago Junio"];
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>¡Bienvenido {user?.username}!</Text>
-      <Text style={styles.subtitle}>Tu perfil de PadelSAG</Text>
-
-      {user?.profileImage ? (
-        <Image
-          source={{ uri: user.profileImage }}
-          style={styles.profileImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View
-          style={[
-            styles.profileImage,
-            {
-              backgroundColor: "#e1e1e1",
-              justifyContent: "center",
-              alignItems: "center",
-            },
-          ]}
+    <ScrollView style={styles.container}>
+      {/* Encabezado */}
+      <View style={styles.header}>
+        <Text style={styles.title}>PadelSAG</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("Profile")}
+          style={styles.profileButton}
         >
-          <Text style={{ fontSize: 50, color: "#888" }}>
-            {user?.username?.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.userInfo}>
-        <Text style={styles.sectionTitle}>Información del Perfil</Text>
-
-        <View style={{ marginBottom: 15 }}>
-          <Text style={styles.infoLabel}>Email:</Text>
-          <Text style={styles.infoText}>
-            {user?.email || "No especificado"}
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <View style={{ width: "48%" }}>
-            <Text style={styles.infoLabel}>Categoría:</Text>
-            <Text style={styles.infoText}>
-              {user?.category || "No especificada"}
-            </Text>
-          </View>
-          <View style={{ width: "48%" }}>
-            <Text style={styles.infoLabel}>Nivel:</Text>
-            <Text style={styles.infoText}>
-              {user?.level || "No especificado"}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 15,
-          }}
-        >
-          <View style={{ width: "48%" }}>
-            <Text style={styles.infoLabel}>Mano hábil:</Text>
-            <Text style={styles.infoText}>
-              {user?.hand || "No especificada"}
-            </Text>
-          </View>
-          <View style={{ width: "48%" }}>
-            <Text style={styles.infoLabel}>Posición:</Text>
-            <Text style={styles.infoText}>
-              {user?.position || "No especificada"}
-            </Text>
-          </View>
-        </View>
+          <Ionicons name="person-circle-outline" size={30} color="#10B981" />
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={handleLogout}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.content}>
+        {/* Próximos partidos */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Próximos Partidos</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              Viernes 19:00 - Complejo El Triángulo
+            </Text>
+            <Text style={styles.cardSubtitle}>Nivel: Intermedio</Text>
+            <TouchableOpacity style={styles.primaryButton}>
+              <Text style={styles.buttonText}>Unirme</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Buscar jugadores */}
+        <TouchableOpacity 
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate('PlayerSearch')}
+        >
+          <Ionicons name="search" size={20} color="#10B981" style={styles.buttonIcon} />
+          <Text style={styles.secondaryButtonText}>Buscar Jugadores</Text>
+        </TouchableOpacity>
+
+        {/* Canchas disponibles */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Canchas Disponibles</Text>
+          <View style={styles.courtsContainer}>
+            {courts.map((court) => (
+              <View key={court} style={styles.card}>
+                <Text style={styles.courtName}>{court}</Text>
+                <Text style={styles.availableText}>Libre</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Ranking */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ranking Local</Text>
+          <View style={[styles.card, styles.rankingCard]}>
+            <Text style={styles.rankingItem}>🥇 Juan P.</Text>
+            <Text style={styles.rankingItem}>🥈 Martín G.</Text>
+            <Text style={styles.rankingItem}>🥉 Lucas D.</Text>
+            <TouchableOpacity>
+              <Text style={styles.linkText}>Ver ranking completo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Torneos */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Próximos Torneos</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tournamentsContainer}
+          >
+            {tournaments.map((tournament) => (
+              <View
+                key={tournament}
+                style={[styles.card, styles.tournamentCard]}
+              >
+                <Text style={styles.cardTitle}>{tournament}</Text>
+                <Text style={styles.cardSubtitle}>Inscripción abierta</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  // Contenedor principal
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: "#f5f5f5",
+  },
+
+  // Encabezado
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
     backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-    marginTop: 20,
+    color: "#10B981",
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 20,
-    textAlign: "center",
+  profileButton: {
+    padding: 8,
   },
-  profileImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    alignSelf: "center",
-    marginBottom: 20,
-    borderWidth: 3,
-    borderColor: "#007AFF",
+
+  // Contenido principal
+  content: {
+    padding: 16,
   },
-  userInfo: {
-    backgroundColor: "#f9f9f9",
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 30,
-  },
-  infoText: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: "#333",
-  },
-  logoutButton: {
-    backgroundColor: "#ff3b30",
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  logoutButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  infoLabel: {
-    fontWeight: "600",
-    color: "#555",
+
+  // Secciones
+  section: {
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#007AFF",
-    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
+    color: "#1F2937",
+  },
+
+  // Tarjetas
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 12,
+  },
+
+  // Botones
+  primaryButton: {
+    backgroundColor: "#10B981",
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    backgroundColor: '#ECFDF5',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  secondaryButtonText: {
+    color: "#1F2937",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+
+  // Lista de canchas
+  courtsContainer: {
+    gap: 12,
+  },
+  courtName: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  availableText: {
+    color: "#10B981",
+    fontWeight: "500",
+    marginTop: 4,
+  },
+
+  // Ranking
+  rankingCard: {
+    paddingVertical: 12,
+  },
+  rankingItem: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  linkText: {
+    color: "#3B82F6",
+    marginTop: 8,
+    fontWeight: "500",
+  },
+
+  // Torneos
+  tournamentsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    paddingVertical: 4,
+  },
+  tournamentCard: {
+    width: 160,
+    padding: 12,
   },
 });
 

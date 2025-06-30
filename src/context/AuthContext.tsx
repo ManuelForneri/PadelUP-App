@@ -25,6 +25,9 @@ interface AuthContextData {
     user: User;
   }>;
   logout: () => Promise<void>;
+  updateProfile: (
+    userData: Partial<User> & { profileImage?: string | null }
+  ) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -82,74 +85,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const register = async (userData: any) => {
     try {
-      console.log('Iniciando proceso de registro...');
+      console.log("Iniciando proceso de registro...");
       const formData = new FormData();
 
-      // Agregar campos de texto (incluyendo repeatPassword)
+      // Extraer la imagen de perfil y los demás campos
       const { profileImage, ...userFields } = userData;
-      console.log('Campos a enviar:', userFields);
-      
+      console.log("Campos a enviar:", userFields);
+
       // Agregar campos de texto al formData
       Object.entries(userFields).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           // Asegurarse de que las contraseñas no se registren en los logs
-          const safeValue = key.toLowerCase().includes('password') ? '***' : String(value);
+          const safeValue = key.toLowerCase().includes("password")
+            ? "***"
+            : value;
           console.log(`Agregando campo: ${key} = ${safeValue}`);
           formData.append(key, String(value));
         }
       });
 
-      // Agregar la imagen si existe
+      // Agregar la imagen de perfil si existe
       if (profileImage) {
-        console.log('Procesando imagen de perfil...');
-        const imageUri = profileImage;
-        const filename = imageUri.split('/').pop() || 'profile.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image/jpg';
-
-        // Crear un objeto de archivo para React Native
-        const file = {
-          uri: imageUri,
-          name: filename,
-          type: type,
-        };
-
-        console.log('Datos de la imagen:', { filename, type });
+        console.log("Procesando imagen de perfil...");
         
-        // Agregar la imagen al formData
-        // @ts-ignore - Necesario para React Native
-        formData.append('image', file);
+        // Extraer la extensión del archivo
+        const uriParts = profileImage.split('.');
+        const fileType = uriParts[uriParts.length - 1];
+        const fileName = `profile_${Date.now()}.${fileType}`;
+        
+        console.log("Datos de la imagen:", {
+          uri: profileImage,
+          name: fileName,
+          type: `image/${fileType}`
+        });
+
+        // Crear un objeto de archivo para la imagen
+        const file = {
+          uri: profileImage,
+          name: fileName,
+          type: `image/${fileType}`,
+        } as any; // Usando 'as any' temporalmente para evitar problemas de tipo
+        
+        formData.append('profileImage', file);
+      } else {
+        console.log("No se proporcionó imagen de perfil");
       }
 
-      console.log('Enviando datos de registro al servidor...');
-      
-      // Realizar la petición usando el helper http.upload que ya maneja el Content-Type correctamente
+      console.log("Enviando datos de registro al servidor...");
       const response = await api.post("/auth/register", formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
         },
+        timeout: 30000, // 30 segundos de timeout
       });
 
-      console.log('Respuesta del servidor recibida:', response.data);
-
       if (response.data.token && response.data.user) {
-        const { token, user } = response.data;
-        
-        console.log('Datos del usuario recibidos:', user);
-        console.log('URL de la imagen de perfil recibida:', user.profileImage);
-        
-        // Crear objeto de usuario con todos los campos necesarios
-        const userData = {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          category: user.category,
-          level: user.level,
-          hand: user.hand,
-          position: user.position,
-          profileImage: user.profileImage
-        };
-        
+        const { token, user: userData } = response.data;
+
         // Guardar token y datos del usuario
         await SecureStore.setItemAsync("userToken", token);
         await SecureStore.setItemAsync("userData", JSON.stringify(userData));
@@ -158,40 +151,97 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setToken(token);
         setUser(userData);
-        
+
         return { token, user: userData };
       } else {
-        throw new Error('Respuesta del servidor incompleta');
+        throw new Error("Respuesta del servidor incompleta");
       }
     } catch (error: any) {
-      console.error('Error en el registro:', error);
-      
+      console.error("Error en el registro:", error);
+
       // Mejor manejo de errores
-      let errorMessage = 'Error al registrarse. Por favor, inténtalo de nuevo.';
-      
+      let errorMessage = "Error al registrarse. Por favor, inténtalo de nuevo.";
+
       if (error.response) {
         // El servidor respondió con un estado de error
-        console.error('Error del servidor:', error.response.data);
+        console.error("Error del servidor:", error.response.data);
         errorMessage = error.response.data?.message || errorMessage;
-        
+
         // Manejar errores de validación específicos
         if (error.response.data?.errors) {
           const validationErrors = Object.values(error.response.data.errors)
             .flat()
-            .join('\n');
+            .join("\n");
           errorMessage = validationErrors || errorMessage;
         }
       } else if (error.request) {
         // La petición se hizo pero no hubo respuesta
-        console.error('No se recibió respuesta del servidor');
-        errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a Internet.';
+        console.error("No se recibió respuesta del servidor");
+        errorMessage =
+          "No se pudo conectar con el servidor. Verifica tu conexión a Internet.";
       } else {
         // Algo pasó al configurar la petición
-        console.error('Error al configurar la petición:', error.message);
+        console.error("Error al configurar la petición:", error.message);
         errorMessage = error.message || errorMessage;
       }
-      
+
       throw new Error(errorMessage);
+    }
+  };
+
+  const updateProfile = async (
+    userData: Partial<User> & { profileImage?: string | null }
+  ) => {
+    try {
+      setIsLoading(true);
+      const formData = new FormData();
+
+      // Agregar campos de texto al formData
+      if (userData.username) formData.append("username", userData.username);
+      if (userData.email) formData.append("email", userData.email);
+      if (userData.category) formData.append("category", userData.category);
+      if (userData.level) formData.append("level", userData.level);
+      if (userData.hand) formData.append("hand", userData.hand);
+      if (userData.position) formData.append("position", userData.position);
+
+      // Agregar la imagen si existe
+      if (userData.profileImage !== undefined) {
+        if (userData.profileImage) {
+          const imageUri = userData.profileImage;
+          const filename = imageUri.split("/").pop() || "profile.jpg";
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : "image/jpg";
+
+          // @ts-ignore - Necesario para React Native
+          formData.append("profileImage", {
+            uri: imageUri,
+            name: filename,
+            type,
+          });
+        } else {
+          // Si profileImage es null, indicamos que se debe eliminar la imagen
+          formData.append("removeImage", "true");
+        }
+      }
+
+      const response = await api.put("/auth/profile", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data.user) {
+        const updatedUser = { ...user, ...response.data.user };
+        setUser(updatedUser);
+        await SecureStore.setItemAsync("userData", JSON.stringify(updatedUser));
+      }
+    } catch (error: any) {
+      console.error("Error al actualizar el perfil:", error);
+      throw new Error(
+        error.response?.data?.message || "Error al actualizar el perfil"
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -211,7 +261,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isLoading, login, register, logout }}
+      value={{
+        user,
+        token,
+        isLoading,
+        login,
+        register,
+        logout,
+        updateProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
