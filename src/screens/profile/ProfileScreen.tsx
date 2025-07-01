@@ -28,7 +28,9 @@ const ProfileScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [profileImage, setProfileImage] = useState(user?.profileImage || null);
   const [formData, setFormData] = useState({
-    username: user?.username || "",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    dni: user?.dni || "",
     email: user?.email || "",
     category: user?.category || "",
     level: user?.level || "",
@@ -136,7 +138,7 @@ const ProfileScreen = () => {
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>
-                {user.username.charAt(0).toUpperCase()}
+                {user.firstName.charAt(0).toUpperCase()}
               </Text>
             </View>
           )}
@@ -157,7 +159,7 @@ const ProfileScreen = () => {
             </View>
           )}
         </View>
-        <Text style={styles.username}>{user.username}</Text>
+        <Text style={styles.name}>{user.firstName}</Text>
         <Text style={styles.category}>Categoría: {user.category}</Text>
       </View>
       <View style={styles.section}>
@@ -439,7 +441,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginHorizontal: 5,
   },
-  username: {
+  name: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 5,

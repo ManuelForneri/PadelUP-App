@@ -4,22 +4,27 @@ import { Alert } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import api from "../services/api";
 
-interface User {
+export interface User {
   id: string;
-  username: string;
+  dni: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  category?: string;
-  level?: string;
-  hand?: string;
-  position?: string;
+  city: string;
+  category: string;
+  level: string;
+  hand: string;
+  position: string;
   profileImage?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AuthContextData {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (usernameOrEmail: string, password: string) => Promise<void>;
+  login: (dniOrEmail: string, password: string) => Promise<void>;
   register: (userData: any) => Promise<{
     token: string;
     user: User;
@@ -62,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     loadStoredData();
   }, []);
 
-  const login = async (usernameOrEmail: string, password: string) => {
+  const login = async (dniOrEmail: string, password: string) => {
     try {
       const response = await api.post("/auth/login", {
         usernameOrEmail,
@@ -107,16 +112,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Agregar la imagen de perfil si existe
       if (profileImage) {
         console.log("Procesando imagen de perfil...");
-        
+
         // Extraer la extensión del archivo
-        const uriParts = profileImage.split('.');
+        const uriParts = profileImage.split(".");
         const fileType = uriParts[uriParts.length - 1];
         const fileName = `profile_${Date.now()}.${fileType}`;
-        
+
         console.log("Datos de la imagen:", {
           uri: profileImage,
           name: fileName,
-          type: `image/${fileType}`
+          type: `image/${fileType}`,
         });
 
         // Crear un objeto de archivo para la imagen
@@ -125,8 +130,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           name: fileName,
           type: `image/${fileType}`,
         } as any; // Usando 'as any' temporalmente para evitar problemas de tipo
-        
-        formData.append('profileImage', file);
+
+        formData.append("profileImage", file);
       } else {
         console.log("No se proporcionó imagen de perfil");
       }
@@ -134,8 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Enviando datos de registro al servidor...");
       const response = await api.post("/auth/register", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json',
+          "Content-Type": "multipart/form-data",
+          Accept: "application/json",
         },
         timeout: 30000, // 30 segundos de timeout
       });
@@ -197,8 +202,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const formData = new FormData();
 
       // Agregar campos de texto al formData
-      if (userData.username) formData.append("username", userData.username);
+      if (userData.dni) formData.append("dni", userData.dni);
+      if (userData.firstName) formData.append("firstName", userData.firstName);
+      if (userData.lastName) formData.append("lastName", userData.lastName);
       if (userData.email) formData.append("email", userData.email);
+      if (userData.city) formData.append("city", userData.city);
       if (userData.category) formData.append("category", userData.category);
       if (userData.level) formData.append("level", userData.level);
       if (userData.hand) formData.append("hand", userData.hand);

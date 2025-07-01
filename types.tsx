@@ -11,7 +11,10 @@ export type RootStackParamList = {
 export interface Player {
   _id: string;
   id?: string; // Para compatibilidad
-  username: string;
+  dni: string;
+  firstName: string;
+  lastName: string;
+  city: string;
   email: string;
   category?: string;
   level?: string;
@@ -25,14 +28,17 @@ export interface Player {
 export interface PlayerFilters {
   category?: string;
   level?: string;
-  hand?: 'Derecha' | 'Izquierda';
-  position?: 'Reves' | 'Drive';
+  hand?: "Derecha" | "Izquierda";
+  position?: "Reves" | "Drive";
   search?: string;
 }
 
 export interface User {
   _id: string;
-  username: string;
+  dni: string;
+  firstName: string;
+  lastName: string;
+  city: string;
   email: string;
   category?: string;
   level?: string;
@@ -45,12 +51,15 @@ export interface User {
 
 // Tipos para los formularios
 export interface LoginFormData {
-  usernameOrEmail: string;
+  dniOrEmail: string;
   password: string;
 }
 
 export interface RegisterFormData {
-  username: string;
+  dni: string;
+  firstName: string;
+  lastName: string;
+  city: string;
   email: string;
   password: string;
   repeatPassword: string;
@@ -62,7 +71,10 @@ export interface RegisterFormData {
 }
 
 export interface ProfileFormData {
-  username: string;
+  dni: string;
+  firstName: string;
+  lastName: string;
+  city: string;
   email: string;
   category?: string;
   level?: string;

@@ -25,12 +25,35 @@ type RegisterScreenNavigationProp = NativeStackNavigationProp<
   "Register"
 >;
 
+// Lista de ciudades disponibles
+const cities = [
+  "San Andrés de Giles",
+  "Luján",
+  "San Antonio de Areco",
+  "Carmen de Areco",
+  "Mercedes",
+  "Suipacha",
+  "Chivilcoy",
+  "Chacabuco",
+  // Agrega más ciudades según sea necesario
+];
+
 const registerSchema = Yup.object().shape({
-  username: Yup.string()
-    .required("Nombre de usuario es requerido")
-    .min(3, "Mínimo 3 caracteres")
-    .max(20, "Máximo 20 caracteres"),
-  email: Yup.string().email("Email inválido").required("Email es requerido"),
+  dni: Yup.string()
+    .required("DNI es requerido")
+    .matches(/^\d{7,8}$/, "DNI inválido (7 u 8 dígitos)"),
+  firstName: Yup.string()
+    .required("Nombre es requerido")
+    .min(2, "Mínimo 2 caracteres")
+    .max(50, "Máximo 50 caracteres"),
+  lastName: Yup.string()
+    .required("Apellido es requerido")
+    .min(2, "Mínimo 2 caracteres")
+    .max(50, "Máximo 50 caracteres"),
+  city: Yup.string().required("Ciudad es requerida"),
+  email: Yup.string()
+    .email("Email inválido")
+    .required("Email es requerido"),
   password: Yup.string()
     .required("Contraseña es requerida")
     .min(6, "Mínimo 6 caracteres"),
@@ -161,7 +184,10 @@ const RegisterScreen = () => {
 
         <Formik
           initialValues={{
-            username: "",
+            dni: "",
+            firstName: "",
+            lastName: "",
+            city: "",
             email: "",
             password: "",
             repeatPassword: "",
@@ -218,20 +244,85 @@ const RegisterScreen = () => {
                 )}
               </View>
 
-              {/* Campos del formulario */}
-              <TextInput
-                style={[
-                  styles.input,
-                  errors.username && touched.username && styles.inputError,
-                ]}
-                placeholder="Nombre de usuario"
-                onChangeText={handleChange("username")}
-                onBlur={handleBlur("username")}
-                value={values.username}
-              />
-              {errors.username && touched.username && (
-                <Text style={styles.errorText}>{errors.username}</Text>
-              )}
+              {/* Campos de información personal */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>DNI *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    touched.dni && errors.dni && styles.inputError,
+                  ]}
+                  placeholder="12345678"
+                  onChangeText={handleChange("dni")}
+                  onBlur={handleBlur("dni")}
+                  value={values.dni}
+                  keyboardType="numeric"
+                  editable={!isSubmitting}
+                />
+                {touched.dni && errors.dni && (
+                  <Text style={styles.errorText}>{errors.dni}</Text>
+                )}
+              </View>
+
+              <View style={styles.row}>
+                <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
+                  <Text style={styles.label}>Nombre *</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      touched.firstName && errors.firstName && styles.inputError,
+                    ]}
+                    placeholder="Juan"
+                    onChangeText={handleChange("firstName")}
+                    onBlur={handleBlur("firstName")}
+                    value={values.firstName}
+                    editable={!isSubmitting}
+                  />
+                  {touched.firstName && errors.firstName && (
+                    <Text style={styles.errorText}>{errors.firstName}</Text>
+                  )}
+                </View>
+                <View style={[styles.inputContainer, { flex: 1 }]}>
+                  <Text style={styles.label}>Apellido *</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      touched.lastName && errors.lastName && styles.inputError,
+                    ]}
+                    placeholder="Pérez"
+                    onChangeText={handleChange("lastName")}
+                    onBlur={handleBlur("lastName")}
+                    value={values.lastName}
+                    editable={!isSubmitting}
+                  />
+                  {touched.lastName && errors.lastName && (
+                    <Text style={styles.errorText}>{errors.lastName}</Text>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Ciudad *</Text>
+                <View style={[
+                  styles.pickerContainer,
+                  touched.city && errors.city && styles.inputError
+                ]}>
+                  <Picker
+                    selectedValue={values.city}
+                    onValueChange={handleChange("city")}
+                    style={styles.picker}
+                    enabled={!isSubmitting}
+                  >
+                    <Picker.Item label="Selecciona una ciudad" value="" />
+                    {cities.map((city) => (
+                      <Picker.Item key={city} label={city} value={city} />
+                    ))}
+                  </Picker>
+                </View>
+                {touched.city && errors.city && (
+                  <Text style={styles.errorText}>{errors.city}</Text>
+                )}
+              </View>
 
               <TextInput
                 style={[
@@ -376,7 +467,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    justifyContent: "center",
   },
   formContainer: {
     width: "100%",
@@ -387,6 +477,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: "center",
   },
+  // Estilos para la subida de imagen
   imageUploadContainer: {
     alignItems: "center",
     marginBottom: 20,
@@ -446,13 +537,50 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: -2,
   },
+  // Estilos para los campos del formulario
+  inputContainer: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 5,
+    fontWeight: "500",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
-    padding: 15,
     borderRadius: 8,
-    marginBottom: 15,
+    padding: 12,
     fontSize: 16,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+    marginBottom: 15,
+  },
+  picker: {
+    height: 50,
+    width: "100%",
   },
   inputError: {
     borderColor: "red",
@@ -464,22 +592,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginLeft: 5,
   },
-  pickerContainer: {
-    marginBottom: 15,
-  },
-  label: {
-    marginBottom: 5,
-    color: "#555",
-  },
   pickerWrapper: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
     overflow: "hidden",
   },
-  picker: {
-    backgroundColor: "#fff",
-  },
+  // picker style is already defined above
   button: {
     backgroundColor: "#007AFF",
     padding: 15,
