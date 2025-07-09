@@ -25,8 +25,8 @@ import { Ionicons } from "@expo/vector-icons";
 const COLORS = {
   primary: "#FF5A5F", // Rojo coral
   secondary: "#00A699", // Verde agua
-  dark: "#2D3436",    // Gris oscuro
-  light: "#F7F9F9",   // Gris muy claro
+  dark: "#2D3436", // Gris oscuro
+  light: "#F7F9F9", // Gris muy claro
   white: "#FFFFFF",
   gray: "#A4A4A4",
   error: "#E74C3C",
@@ -47,7 +47,10 @@ const LoginScreen = () => {
   const { login, isLoading } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
-  const handleLogin = async (values: { dniOrEmail: string; password: string }) => {
+  const handleLogin = async (values: {
+    dniOrEmail: string;
+    password: string;
+  }) => {
     try {
       await login(values.dniOrEmail, values.password);
     } catch (error: any) {
@@ -65,7 +68,7 @@ const LoginScreen = () => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
@@ -82,20 +85,31 @@ const LoginScreen = () => {
           validationSchema={loginSchema}
           onSubmit={handleLogin}
         >
-          {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+          {({
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            values,
+            errors,
+            touched,
+          }) => (
             <View style={styles.formContainer}>
               {/* Campo de DNI/Email */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>DNI o Email</Text>
-                <View style={[
-                  styles.inputWrapper,
-                  errors.dniOrEmail && touched.dniOrEmail && styles.inputError
-                ]}>
-                  <Ionicons 
-                    name="person-outline" 
-                    size={20} 
-                    color={COLORS.gray} 
-                    style={styles.inputIcon} 
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.dniOrEmail &&
+                      touched.dniOrEmail &&
+                      styles.inputError,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={COLORS.gray}
+                    style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
@@ -118,15 +132,17 @@ const LoginScreen = () => {
               {/* Campo de Contraseña */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Contraseña</Text>
-                <View style={[
-                  styles.inputWrapper,
-                  errors.password && touched.password && styles.inputError
-                ]}>
-                  <Ionicons 
-                    name="lock-closed-outline" 
-                    size={20} 
-                    color={COLORS.gray} 
-                    style={styles.inputIcon} 
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    errors.password && touched.password && styles.inputError,
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color={COLORS.gray}
+                    style={styles.inputIcon}
                   />
                   <TextInput
                     style={[styles.input, { flex: 1 }]}
@@ -138,26 +154,30 @@ const LoginScreen = () => {
                     onBlur={handleBlur("password")}
                     editable={!isLoading}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={togglePasswordVisibility}
                     style={styles.eyeIcon}
                   >
-                    <Ionicons 
-                      name={isPasswordVisible ? "eye-off-outline" : "eye-outline"} 
-                      size={20} 
-                      color={COLORS.gray} 
+                    <Ionicons
+                      name={
+                        isPasswordVisible ? "eye-off-outline" : "eye-outline"
+                      }
+                      size={20}
+                      color={COLORS.gray}
                     />
                   </TouchableOpacity>
                 </View>
                 {errors.password && touched.password && (
                   <Text style={styles.errorText}>{errors.password}</Text>
                 )}
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.forgotPassword}
                   onPress={() => {}} // TODO: Implementar recuperación de contraseña
                 >
-                  <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+                  <Text style={styles.forgotPasswordText}>
+                    ¿Olvidaste tu contraseña?
+                  </Text>
                 </TouchableOpacity>
               </View>
 
@@ -185,7 +205,7 @@ const LoginScreen = () => {
               {/* Botón de Registro */}
               <View style={styles.registerContainer}>
                 <Text style={styles.registerText}>¿No tienes una cuenta? </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => navigation.navigate("Register")}
                   disabled={isLoading}
                 >
@@ -205,35 +225,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
   },
+
   scrollContainer: {
     flexGrow: 1,
     padding: 20,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 15,
   },
   appName: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.dark,
     marginTop: 10,
   },
   subtitle: {
     fontSize: 16,
     color: COLORS.gray,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 5,
   },
   formContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   inputContainer: {
     marginBottom: 20,
@@ -242,21 +263,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.dark,
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.light,
     borderRadius: 10,
     paddingHorizontal: 15,
     height: 50,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   input: {
     flex: 1,
-    height: '100%',
+    height: "100%",
     color: COLORS.dark,
     fontSize: 16,
     paddingLeft: 10,
@@ -280,8 +301,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     padding: 16,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 10,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
@@ -296,26 +317,26 @@ const styles = StyleSheet.create({
   buttonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   forgotPassword: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginTop: 5,
   },
   forgotPasswordText: {
     color: COLORS.primary,
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 25,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
   },
   dividerText: {
     color: COLORS.gray,
@@ -323,8 +344,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 10,
   },
   registerText: {
@@ -334,7 +355,7 @@ const styles = StyleSheet.create({
   registerLink: {
     color: COLORS.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 
