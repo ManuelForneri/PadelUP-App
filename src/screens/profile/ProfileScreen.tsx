@@ -9,12 +9,28 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../../types";
+import {
+  Ionicons,
+  MaterialIcons,
+  FontAwesome,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { Picker } from "@react-native-picker/picker";
+
+const { width } = Dimensions.get("window");
+
+// Constantes para los selectores
+const CATEGORIAS = ["8va", "7ma", "6ta", "5ta", "4ta", "3ra", "2da", "1ra"];
+
+const NIVELES = ["Inicial", "Medio", "Avanzado"];
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -129,87 +145,136 @@ const ProfileScreen = () => {
     );
   }
 
+  const getSkillLevel = (level: string) => {
+    switch (level?.toLowerCase()) {
+      case "inicial":
+        return "Principiante";
+      case "medio":
+        return "Intermedio";
+      case "avanzado":
+        return "Avanzado";
+      case "fuerte":
+        return "Fuerte";
+      default:
+        return level || "No especificado";
+    }
+  };
+
+  const getPositionIcon = (position: string) => {
+    return position === "Drive" ? "tennis-ball" : "tennis";
+  };
+
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.avatarContainer}>
-          {profileImage ? (
-            <Image source={{ uri: profileImage }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>
-                {user.firstName.charAt(0).toUpperCase()}
-              </Text>
+      <LinearGradient
+        colors={["#4c669f", "#3b5998", "#192f6a"]}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <View style={styles.avatarContainer}>
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>
+                  {user.firstName?.charAt(0)}
+                  {user.lastName?.charAt(0)}
+                </Text>
+              </View>
+            )}
+            {isEditing && (
+              <View style={styles.imageButtons}>
+                <TouchableOpacity
+                  style={styles.imageButton}
+                  onPress={() => pickImage(false)}
+                >
+                  <Ionicons name="images" size={20} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.imageButton}
+                  onPress={() => pickImage(true)}
+                >
+                  <Ionicons name="camera" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={styles.name}>
+              {user.firstName} {user.lastName}
+            </Text>
+            <View style={styles.userStats}>
+              <View style={styles.statItem}>
+                <MaterialIcons name="category" size={16} color="#fff" />
+                <Text style={styles.statText}>
+                  {user.category || "Sin categoría"}
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <MaterialIcons name="location-on" size={16} color="#fff" />
+                <Text style={styles.statText}>
+                  {user.city || "Sin ubicación"}
+                </Text>
+              </View>
             </View>
-          )}
-          {isEditing && (
-            <View style={styles.imageButtons}>
-              <TouchableOpacity
-                style={[styles.imageButton, { marginRight: 10 }]}
-                onPress={() => pickImage(false)}
-              >
-                <Text style={styles.buttonText}>Galería</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.imageButton}
-                onPress={() => pickImage(true)}
-              >
-                <Text style={styles.buttonText}>Cámara</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          </View>
         </View>
-        <Text style={styles.name}>{user.firstName}</Text>
-        <Text style={styles.category}>Categoría: {user.category}</Text>
-      </View>
+      </LinearGradient>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Información del Perfil</Text>
 
         {isEditing ? (
           <>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nombre de usuario</Text>
+              <Text style={styles.label}>Nombre</Text>
               <TextInput
                 style={styles.input}
-                value={formData.username}
+                value={formData.firstName}
                 onChangeText={(text) =>
-                  setFormData({ ...formData, username: text })
+                  setFormData({ ...formData, firstName: text })
                 }
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.email}
-                keyboardType="email-address"
-                onChangeText={(text) =>
-                  setFormData({ ...formData, email: text })
-                }
+                placeholder="Tu nombre completo"
               />
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Categoría</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.category}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, category: text })
-                }
-              />
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formData.category}
+                  onValueChange={(itemValue) =>
+                    setFormData({ ...formData, category: itemValue })
+                  }
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Selecciona una categoría" value="" />
+                  {CATEGORIAS.map((categoria) => (
+                    <Picker.Item
+                      key={categoria}
+                      label={categoria}
+                      value={categoria}
+                    />
+                  ))}
+                </Picker>
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nivel</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.level}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, level: text })
-                }
-              />
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formData.level}
+                  onValueChange={(itemValue) =>
+                    setFormData({ ...formData, level: itemValue })
+                  }
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Selecciona un nivel" value="" />
+                  {NIVELES.map((nivel) => (
+                    <Picker.Item key={nivel} label={nivel} value={nivel} />
+                  ))}
+                </Picker>
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
@@ -300,46 +365,103 @@ const ProfileScreen = () => {
           </>
         ) : (
           <View style={styles.infoContainer}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Email:</Text>
-              <Text style={styles.infoText}>{user.email}</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.infoIcon}>
+                <Ionicons name="mail" size={20} color="#4c669f" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Correo Electrónico</Text>
+                <Text
+                  style={styles.infoText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {user.email}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nivel:</Text>
-              <Text style={styles.infoText}>{user.level}</Text>
+
+            <View style={[styles.infoCard, styles.skillCard]}>
+              <View style={[styles.infoIcon, { backgroundColor: "#e3f2fd" }]}>
+                <MaterialIcons name="emoji-events" size={20} color="#4c669f" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Nivel de Juego</Text>
+                <Text style={styles.infoText}>{getSkillLevel(user.level)}</Text>
+                <View style={styles.skillLevel}>
+                  <View
+                    style={[
+                      styles.skillBar,
+                      {
+                        width:
+                          user.level === "inicial"
+                            ? "33%"
+                            : user.level === "medio"
+                            ? "66%"
+                            : "100%",
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
             </View>
+
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Mano hábil:</Text>
-              <Text style={styles.infoText}>{user.hand}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Posición:</Text>
-              <Text style={styles.infoText}>{user.position}</Text>
+              <View style={[styles.infoCard, styles.infoCardHalf]}>
+                <View style={[styles.infoIcon, { backgroundColor: "#e8f5e9" }]}>
+                  <MaterialCommunityIcons
+                    name="hand-back-left"
+                    size={20}
+                    color="#4c669f"
+                  />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Mano Hábil</Text>
+                  <Text style={styles.infoText}>
+                    {user.hand || "No especificado"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.infoCard, styles.infoCardHalf]}>
+                <View style={[styles.infoIcon, { backgroundColor: "#e8f5e9" }]}>
+                  <MaterialCommunityIcons
+                    name={getPositionIcon(user.position)}
+                    size={20}
+                    color="#4c669f"
+                  />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Posición</Text>
+                  <Text style={styles.infoText}>
+                    {user.position === "Drive"
+                      ? "Drive"
+                      : user.position === "Reves"
+                      ? "Revés"
+                      : "No especificada"}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
         )}
       </View>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Votación</Text>
-        <Text style={styles.voteText}>
-          ¿Este jugador está en la categoría correcta?
-        </Text>
-        <View style={styles.voteButtons}>
-          <TouchableOpacity
-            style={[styles.voteButton, styles.voteUp]}
-            onPress={() => handleVote("up")}
-          >
-            <Text style={styles.voteButtonText}>↑ Ta pasado</Text>
-          </TouchableOpacity>
-          {/*
-          <TouchableOpacity
-            style={[styles.voteButton, styles.voteDown]}
-            onPress={() => handleVote("down")}
-          >
-            <Text style={styles.voteButtonText}>↓ Está por debajo</Text>
-          </TouchableOpacity>*/}
+      {user?.id !== user?.id && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Votación</Text>
+          <Text style={styles.voteText}>
+            ¿Este jugador está en la categoría correcta?
+          </Text>
+          <View style={styles.voteButtons}>
+            <TouchableOpacity
+              style={[styles.voteButton, styles.voteUp]}
+              onPress={() => handleVote("up")}
+            >
+              <Text style={styles.voteButtonText}>↑ Ta pasado</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
       <View style={styles.buttonContainer}>
         {isEditing ? (
           <>
@@ -359,7 +481,9 @@ const ProfileScreen = () => {
               onPress={() => {
                 setIsEditing(false);
                 setFormData({
-                  username: user.username,
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  dni: user.dni,
                   email: user.email,
                   category: user.category || "",
                   level: user.level || "",
@@ -398,74 +522,200 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f8f9fa",
+  },
+  headerGradient: {
+    paddingTop: 30,
+    paddingBottom: 15,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
   header: {
     alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    padding: 16,
   },
   avatarContainer: {
-    marginBottom: 15,
+    position: "relative",
+    marginBottom: 12,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 10,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: "#fff",
   },
   avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#e1e1e1",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#5c6bc0",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 10,
+    borderWidth: 3,
+    borderColor: "#fff",
   },
   avatarText: {
-    fontSize: 50,
-    color: "#888",
+    fontSize: 36,
+    color: "#fff",
     fontWeight: "bold",
   },
-  imageButtons: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  imageButton: {
-    backgroundColor: "#007AFF",
-    padding: 8,
-    borderRadius: 5,
-    marginHorizontal: 5,
+  userInfo: {
+    alignItems: "center",
+    marginTop: 8,
+    width: "100%",
   },
   name: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 5,
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 4,
+    paddingHorizontal: 8,
+  },
+  userStats: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginTop: 8,
+    width: "100%",
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    margin: 3,
+    maxWidth: "45%",
+  },
+  statText: {
+    color: "#fff",
+    marginLeft: 4,
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  imageButtons: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    flexDirection: "row",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 12,
+    padding: 3,
+  },
+  imageButton: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 1,
+  },
+  section: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 14,
+    margin: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2c3e50",
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  infoCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  infoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#f0f4ff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 10,
+    color: "#666",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    fontWeight: "600",
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#222",
+    fontWeight: "600",
+  },
+  skillCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: "#5c6bc0",
+  },
+  skillLevel: {
+    height: 6,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 3,
+    marginTop: 8,
+    overflow: "hidden",
+  },
+  skillBar: {
+    height: "100%",
+    backgroundColor: "#4caf50",
+    borderRadius: 3,
+  },
+  infoRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    marginHorizontal: -5,
+  },
+  infoCardHalf: {
+    width: "48%",
+    marginBottom: 10,
+    marginHorizontal: 0,
   },
   category: {
     fontSize: 16,
     color: "#666",
   },
-  section: {
-    backgroundColor: "#fff",
-    margin: 10,
-    borderRadius: 10,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#333",
+  infoContainer: {
+    paddingHorizontal: 15,
   },
   inputGroup: {
     marginBottom: 15,
@@ -478,10 +728,20 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#f5f5f5",
     borderRadius: 5,
-    padding: 10,
+    padding: 12,
     fontSize: 16,
     borderWidth: 1,
     borderColor: "#ddd",
+  },
+  pickerContainer: {
+    backgroundColor: "#f5f5f5",
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    marginTop: 4,
+  },
+  picker: {
+    width: "100%",
   },
   radioGroup: {
     flexDirection: "row",
@@ -507,23 +767,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-  infoContainer: {
-    padding: 5,
-  },
-  infoRow: {
-    flexDirection: "row",
-    marginBottom: 10,
-  },
-  infoLabel: {
-    width: 100,
-    fontSize: 16,
-    color: "#666",
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-  },
+
   voteText: {
     fontSize: 16,
     marginBottom: 15,
@@ -539,7 +783,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 5,
     alignItems: "center",
-    minWidth: 150,
   },
   voteUp: {
     backgroundColor: "#4CAF50",
@@ -552,18 +795,22 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   buttonContainer: {
-    padding: 20,
-    alignItems: "center",
+    padding: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
   },
   button: {
-    width: "100%",
-    padding: 15,
-    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     alignItems: "center",
-    marginBottom: 10,
+    justifyContent: "center",
+    margin: 6,
+    minWidth: 120,
   },
   editButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#4c669f",
   },
   saveButton: {
     backgroundColor: "#4CAF50",
@@ -571,21 +818,26 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: "#f5f5f5",
     borderWidth: 1,
-    borderColor: "#ff3b30",
+    borderColor: "#ddd",
   },
   buttonText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 14,
+    fontWeight: "600",
   },
   logoutButton: {
-    backgroundColor: "#ff3b30",
-    borderColor: "#ff3b30",
+    backgroundColor: "#f44336",
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 10,
+    marginBottom: 10,
   },
   logoutButtonText: {
     color: "#fff",
+    fontSize: 14,
     fontWeight: "600",
-    textAlign: "center",
   },
 });
 
