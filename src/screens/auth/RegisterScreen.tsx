@@ -22,19 +22,8 @@ import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
+import { COLORS } from "../../theme/colors";
 import { RootStackParamList } from "../../types/navigation";
-
-// Paleta de colores
-const COLORS = {
-  primary: "#FF5A5F", // Rojo coral
-  secondary: "#00A699", // Verde agua
-  dark: "#2D3436", // Gris oscuro
-  light: "#F7F9F9", // Gris muy claro
-  white: "#FFFFFF",
-  gray: "#A4A4A4",
-  error: "#E74C3C",
-  lightGray: "#E0E0E0",
-};
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -74,10 +63,24 @@ const registerSchema = Yup.object().shape({
   repeatPassword: Yup.string()
     .oneOf([Yup.ref("password")], "Las contraseñas deben coincidir")
     .required("Confirma tu contraseña"),
-  category: Yup.string().required("Categoría es requerida"),
-  level: Yup.string().required("Nivel es requerido"),
-  hand: Yup.string().required("Mano hábil es requerida"),
-  position: Yup.string().required("Posición es requerida"),
+  gender: Yup.string()
+    .required("Género es requerido")
+    .oneOf(["masculino", "femenino", "otro"], "Género inválido"),
+  category: Yup.string()
+    .required("Categoría es requerida")
+    .oneOf(
+      ["8va", "7ma", "6ta", "5ta", "4ta", "3ra", "2da", "1ra"],
+      "Categoría inválida"
+    ),
+  nivel: Yup.string()
+    .required("Nivel es requerido")
+    .oneOf(["inicial", "medio", "fuerte"], "Nivel inválido"),
+  hand: Yup.string()
+    .required("Mano hábil es requerida")
+    .oneOf(["Derecha", "Izquierda"], "Opción inválida"),
+  position: Yup.string()
+    .required("Posición es requerida")
+    .oneOf(["Reves", "Drive", "Ambos"], "Posición inválida"),
 });
 
 const RegisterScreen = () => {
@@ -144,66 +147,86 @@ const RegisterScreen = () => {
   const handleRegister = async (values: any) => {
     try {
       console.log("Iniciando proceso de registro...");
-      
+
       // Validar que las contraseñas coincidan
       if (values.password !== values.repeatPassword) {
         Alert.alert("Error", "Las contraseñas no coinciden");
         return;
       }
 
+      // Validar que se haya seleccionado un género
+      if (!values.gender) {
+        Alert.alert("Error", "Por favor selecciona un género");
+        return;
+      }
+
+      // Validar que se haya seleccionado una categoría
+      if (!values.category) {
+        Alert.alert("Error", "Por favor selecciona una categoría");
+        return;
+      }
+
       setIsLoading(true);
-      
+
       // Crear un objeto con los datos del usuario
       const userData = {
         dni: values.dni,
         firstName: values.firstName,
         lastName: values.lastName,
-        email: values.email,
+        email: values.email.toLowerCase(),
         password: values.password,
         city: values.city,
+        gender: values.gender,
         category: values.category,
-        level: values.level,
+        nivel: values.nivel,
         hand: values.hand,
         position: values.position,
-        // La imagen se agregará aparte en el AuthContext
-        profileImage: profileImage || null
+        profileImage: profileImage || "",
+        votes: {
+          upVotes: 0,
+          downVotes: 0,
+          totalVotes: 0,
+          voters: [],
+        },
+        points: 0,
       };
 
       console.log("Datos del usuario a registrar:", {
         ...userData,
-        password: '***', // No registrar la contraseña real
-        profileImage: profileImage ? 'Imagen proporcionada' : 'Sin imagen'
+        password: "***", // No registrar la contraseña real
+        profileImage: profileImage ? "Imagen proporcionada" : "Sin imagen",
       });
 
       console.log("Enviando datos de registro al servidor...");
-      
+
       try {
         const response = await register(userData);
         console.log("Registro exitoso:", response);
-        
+
         // Mostrar mensaje de éxito
         Alert.alert(
           "¡Registro exitoso!",
           "Tu cuenta ha sido creada correctamente. Serás redirigido al inicio."
         );
-        
+
         // El AuthProvider manejará la redirección automáticamente
       } catch (apiError: any) {
         console.error("Error en la API:", apiError);
-        
+
         // Mostrar mensaje de error más descriptivo
-        const errorMessage = apiError.response?.data?.message || 
-                           apiError.message || 
-                           "Ocurrió un error al procesar tu registro. Por favor, inténtalo de nuevo.";
-        
+        const errorMessage =
+          apiError.response?.data?.message ||
+          apiError.message ||
+          "Ocurrió un error al procesar tu registro. Por favor, inténtalo de nuevo.";
+
         Alert.alert("Error en el registro", errorMessage);
-        
+
         // Relanzar el error para que pueda ser manejado por el bloque catch externo si es necesario
         throw apiError;
       }
     } catch (error: any) {
       console.error("Error en el proceso de registro:", error);
-      
+
       // No mostrar alerta aquí si ya se mostró en el bloque interno
       if (!error.handled) {
         Alert.alert(
@@ -221,7 +244,10 @@ const RegisterScreen = () => {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.backgroundLight}
+      />
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
@@ -229,7 +255,7 @@ const RegisterScreen = () => {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Ionicons name="tennisball" size={60} color={COLORS.primary} />
-            <Text style={styles.appName}>PadelSAG</Text>
+            <Text style={styles.appName}>Padel UP</Text>
           </View>
           <Text style={styles.subtitle}>Crea tu cuenta</Text>
         </View>
@@ -243,10 +269,11 @@ const RegisterScreen = () => {
             email: "",
             password: "",
             repeatPassword: "",
-            category: "3ra",
-            level: "Medio",
+            gender: "",
+            category: "8va", // Valor por defecto: 8va categoría
+            nivel: "medio", // Valor por defecto: nivel medio
             hand: "Derecha",
-            position: "Drive",
+            position: "Ambos",
           }}
           validationSchema={registerSchema}
           onSubmit={handleRegister}
@@ -288,7 +315,7 @@ const RegisterScreen = () => {
                     onPress={() => setProfileImage(null)}
                     disabled={isLoading}
                   >
-                    <Ionicons name="close" size={20} color={COLORS.white} />
+                    <Ionicons name="close" size={20} color={COLORS.textLight} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -543,6 +570,39 @@ const RegisterScreen = () => {
                 <View
                   style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}
                 >
+                  <Text style={styles.label}>Género *</Text>
+                  <View
+                    style={[
+                      styles.pickerContainer,
+                      touched.gender && errors.gender && styles.inputError,
+                    ]}
+                  >
+                    <View style={styles.pickerWrapper}>
+                      <Ionicons
+                        name="person"
+                        size={20}
+                        color={COLORS.gray}
+                        style={styles.pickerIcon}
+                      />
+                      <Picker
+                        selectedValue={values.gender}
+                        onValueChange={handleChange("gender")}
+                        style={styles.picker}
+                        dropdownIconColor={COLORS.gray}
+                        enabled={!isLoading}
+                      >
+                        <Picker.Item label="Seleccione un género" value="" />
+                        <Picker.Item label="Masculino" value="masculino" />
+                        <Picker.Item label="Femenino" value="femenino" />
+                        <Picker.Item label="Otro" value="otro" />
+                      </Picker>
+                    </View>
+                  </View>
+                  {touched.gender && errors.gender && (
+                    <Text style={styles.errorText}>{errors.gender}</Text>
+                  )}
+                </View>
+                <View style={[styles.inputContainer, { flex: 1 }]}>
                   <Text style={styles.label}>Categoría *</Text>
                   <View
                     style={[
@@ -564,24 +624,36 @@ const RegisterScreen = () => {
                         dropdownIconColor={COLORS.gray}
                         enabled={!isLoading}
                       >
-                        <Picker.Item label="1ra" value="1ra" />
-                        <Picker.Item label="2da" value="2da" />
-                        <Picker.Item label="3ra" value="3ra" />
-                        <Picker.Item label="4ta" value="4ta" />
-                        <Picker.Item label="5ta" value="5ta" />
-                        <Picker.Item label="6ta" value="6ta" />
-                        <Picker.Item label="7ma" value="7ma" />
+                        <Picker.Item
+                          label="Selecciona una categoría"
+                          value=""
+                        />
                         <Picker.Item label="8va" value="8va" />
+                        <Picker.Item label="7ma" value="7ma" />
+                        <Picker.Item label="6ta" value="6ta" />
+                        <Picker.Item label="5ta" value="5ta" />
+                        <Picker.Item label="4ta" value="4ta" />
+                        <Picker.Item label="3ra" value="3ra" />
+                        <Picker.Item label="2da" value="2da" />
+                        <Picker.Item label="1ra" value="1ra" />
                       </Picker>
                     </View>
                   </View>
+                  {touched.category && errors.category && (
+                    <Text style={styles.errorText}>{errors.category}</Text>
+                  )}
                 </View>
-                <View style={[styles.inputContainer, { flex: 1 }]}>
+              </View>
+
+              <View style={styles.column}>
+                <View
+                  style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}
+                >
                   <Text style={styles.label}>Nivel *</Text>
                   <View
                     style={[
                       styles.pickerContainer,
-                      touched.level && errors.level && styles.inputError,
+                      touched.nivel && errors.nivel && styles.inputError,
                     ]}
                   >
                     <View style={styles.pickerWrapper}>
@@ -592,20 +664,24 @@ const RegisterScreen = () => {
                         style={styles.pickerIcon}
                       />
                       <Picker
-                        selectedValue={values.level}
-                        onValueChange={handleChange("level")}
+                        selectedValue={values.nivel}
+                        onValueChange={handleChange("nivel")}
                         style={styles.picker}
                         dropdownIconColor={COLORS.gray}
                         enabled={!isLoading}
                       >
-                        <Picker.Item label="Inicial" value="Inicial" />
-                        <Picker.Item label="Medio" value="Medio" />
-                        <Picker.Item label="Avanzado" value="Avanzado" />
-                        <Picker.Item label="Fuerte" value="Fuerte" />
+                        <Picker.Item label="Selecciona un nivel" value="" />
+                        <Picker.Item label="Inicial" value="inicial" />
+                        <Picker.Item label="Medio" value="medio" />
+                        <Picker.Item label="Fuerte" value="fuerte" />
                       </Picker>
                     </View>
                   </View>
+                  {touched.nivel && errors.nivel && (
+                    <Text style={styles.errorText}>{errors.nivel}</Text>
+                  )}
                 </View>
+                <View style={[styles.inputContainer, { flex: 1 }]} />
               </View>
 
               <View style={styles.column}>
@@ -638,6 +714,9 @@ const RegisterScreen = () => {
                       </Picker>
                     </View>
                   </View>
+                  {touched.hand && errors.hand && (
+                    <Text style={styles.errorText}>{errors.hand}</Text>
+                  )}
                 </View>
                 <View style={[styles.inputContainer, { flex: 1 }]}>
                   <Text style={styles.label}>Posición *</Text>
@@ -661,12 +740,15 @@ const RegisterScreen = () => {
                         dropdownIconColor={COLORS.gray}
                         enabled={!isLoading}
                       >
+                        <Picker.Item label="Revés" value="Reves" />
                         <Picker.Item label="Drive" value="Drive" />
-                        <Picker.Item label="Reves" value="Reves" />
-                        <Picker.Item label="Ambos" value="Ambos" />
+                        <Picker.Item label="Ambos lados" value="Ambos" />
                       </Picker>
                     </View>
                   </View>
+                  {touched.position && errors.position && (
+                    <Text style={styles.errorText}>{errors.position}</Text>
+                  )}
                 </View>
               </View>
 
@@ -680,7 +762,9 @@ const RegisterScreen = () => {
                     !values.email ||
                     !values.password ||
                     !values.repeatPassword ||
-                    !values.city) &&
+                    !values.city ||
+                    !values.gender ||
+                    !values.category) &&
                     styles.buttonDisabled,
                 ]}
                 onPress={() => handleSubmit()}
@@ -692,11 +776,13 @@ const RegisterScreen = () => {
                   !values.email ||
                   !values.password ||
                   !values.repeatPassword ||
-                  !values.city
+                  !values.city ||
+                  !values.gender ||
+                  !values.category
                 }
               >
                 {isLoading ? (
-                  <ActivityIndicator color={COLORS.white} />
+                  <ActivityIndicator color={COLORS.textLight} />
                 ) : (
                   <Text style={styles.buttonText}>Registrarse</Text>
                 )}
@@ -722,7 +808,7 @@ const RegisterScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -739,7 +825,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: "bold",
-    color: COLORS.dark,
+    color: COLORS.textDark,
     marginTop: 10,
   },
   subtitle: {
@@ -762,11 +848,11 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.backgroundLight,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: COLORS.lightGray,
+    borderColor: COLORS.gray,
     borderStyle: "dashed",
     overflow: "hidden",
   },
@@ -803,7 +889,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   removeImageText: {
-    color: COLORS.white,
+    color: COLORS.textLight,
     fontSize: 18,
     lineHeight: 20,
     fontWeight: "bold",
@@ -814,7 +900,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: COLORS.dark,
+    color: COLORS.textDark,
     marginBottom: 8,
     fontWeight: "500",
   },
@@ -831,7 +917,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.backgroundLight,
     borderRadius: 10,
     paddingHorizontal: 15,
     height: 50,
@@ -841,7 +927,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 50,
-    color: COLORS.dark,
+    color: COLORS.textDark,
     fontSize: 16,
     paddingHorizontal: 10,
   },
@@ -854,17 +940,17 @@ const styles = StyleSheet.create({
   },
   // Estilos para los selectores
   pickerContainer: {
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.backgroundLight,
     borderRadius: 10,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: COLORS.lightGray,
+    borderColor: COLORS.gray,
     overflow: "hidden",
   },
   picker: {
     flex: 1,
     height: 50,
-    color: COLORS.dark,
+    color: COLORS.textDark,
     marginLeft: 5,
   },
   pickerWrapper: {
@@ -904,7 +990,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${COLORS.primary}80`,
   },
   buttonText: {
-    color: COLORS.white,
+    color: COLORS.textLight,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -917,7 +1003,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   loginText: {
-    color: COLORS.dark,
+    color: COLORS.textDark,
     fontSize: 14,
   },
   loginLink: {

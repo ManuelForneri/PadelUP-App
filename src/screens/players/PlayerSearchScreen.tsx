@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -27,22 +27,10 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [filters, setFilters] = useState<PlayerFilters>({});
   const [searchText, setSearchText] = useState<string>("");
-
-  // Cargar jugadores cuando cambian los filtros o al montar el componente
-  useEffect(() => {
-    console.log("Filtros actualizados:", filters);
-    loadPlayers();
-  }, [filters]);
-
-  // Función para obtener el ID del usuario actual
-  const getCurrentUserId = () => {
-    if (!currentUser) return null;
-    // El contexto de autenticación usa 'id' en lugar de '_id'
-    return (currentUser as any).id || (currentUser as any)._id;
-  };
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Función para cargar jugadores con los filtros actuales
-  const loadPlayers = async () => {
+  const loadPlayers = useCallback(async () => {
     try {
       setLoading(true);
       const response = await playerService.getPlayers(filters);
@@ -63,7 +51,52 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
+  }, [filters, currentUser]);
+
+  // Efecto para manejar la búsqueda con debounce
+  useEffect(() => {
+    // Limpiar el timeout anterior si existe
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Solo buscar si hay texto o si se ha borrado todo el texto
+    if (searchText.trim() !== '' || filters.search) {
+      // Establecer un nuevo timeout para buscar después de 500ms sin cambios
+      const timeoutId = setTimeout(() => {
+        console.log("Buscando con texto:", searchText);
+        setFilters(prev => ({
+          ...prev,
+          search: searchText.trim() || undefined,
+        }));
+      }, 500);
+
+      setSearchTimeout(timeoutId);
+    }
+
+    // Limpiar el timeout al desmontar el componente o cuando cambie searchText
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchText]);
+
+  // Cargar jugadores cuando cambian los filtros
+  useEffect(() => {
+    console.log("Filtros actualizados:", filters);
+    // No mostrar el indicador de carga completo, solo el de la lista
+    loadPlayers();
+  }, [filters]);
+
+  // Función para obtener el ID del usuario actual
+  const getCurrentUserId = () => {
+    if (!currentUser) return null;
+    // El contexto de autenticación usa 'id' en lugar de '_id'
+    return (currentUser as any).id || (currentUser as any)._id;
   };
+
+
 
   // Función para manejar el refrescado
   const handleRefresh = () => {
@@ -71,13 +104,10 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
     loadPlayers();
   };
 
-  // Función para buscar jugadores
-  const handleSearch = () => {
-    console.log("Buscando jugadores con texto:", searchText);
-    setFilters((prev) => ({
-      ...prev,
-      search: searchText.trim() || undefined,
-    }));
+  // Función para manejar el cambio en el campo de búsqueda
+  const handleSearchChange = (text: string) => {
+    setSearchText(text);
+    // La búsqueda se activará automáticamente después del debounce
   };
 
   // Renderizar cada elemento de la lista
@@ -113,14 +143,7 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  // Renderizar el componente de carga
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  // No mostramos el loading completo de la pantalla
 
   return (
     <View style={styles.container}>
@@ -134,16 +157,18 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
           placeholder="Buscar jugadores..."
           placeholderTextColor={colors.text + "80"}
           value={searchText}
-          onChangeText={setSearchText}
-          onSubmitEditing={handleSearch}
+          onChangeText={handleSearchChange}
           returnKeyType="search"
         />
-        <TouchableOpacity
-          style={[styles.searchButton, { backgroundColor: colors.primary }]}
-          onPress={handleSearch}
-        >
-          <Ionicons name="search" size={20} color="white" />
-        </TouchableOpacity>
+        {loading ? (
+          <View style={[styles.searchButton, { backgroundColor: colors.primary }]}>
+            <ActivityIndicator size="small" color="white" />
+          </View>
+        ) : (
+          <View style={[styles.searchButton, { backgroundColor: colors.primary }]}>
+            <Ionicons name="search" size={20} color="white" />
+          </View>
+        )}
       </View>
 
       {/* Filtros */}
@@ -152,22 +177,30 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       {/* Lista de jugadores */}
-      <FlatList
-        data={players}
-        renderItem={renderPlayerItem}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.listContent}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people" size={60} color={colors.text + "80"} />
-            <Text style={[styles.emptyText, { color: colors.text + "80" }]}>
-              No se encontraron jugadores
-            </Text>
-          </View>
-        }
-      />
+      {loading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={players}
+          renderItem={renderPlayerItem}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={styles.listContent}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people" size={60} color={colors.text + "80"} />
+              <Text style={[styles.emptyText, { color: colors.text + "80" }]}>
+                {filters.search 
+                  ? "No se encontraron jugadores que coincidan con la búsqueda" 
+                  : "No se encontraron jugadores"}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };
@@ -199,8 +232,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filtersContainer: {
     marginBottom: 16,

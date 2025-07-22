@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "../../theme/colors";
 
 // Definición de tipos
 type HeaderProps = {
@@ -26,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({
         <Text style={styles.date}>{currentDate}</Text>
       </View>
       <TouchableOpacity onPress={onProfilePress} style={styles.profileButton}>
-        <Ionicons name="person-circle" size={40} color="#FF5A5F" />
+        <Ionicons name="person-circle" size={40} color={COLORS.primary} />
       </TouchableOpacity>
     </View>
   );
@@ -38,14 +39,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: COLORS.backgroundPrimary,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: COLORS.border,
   },
   greeting: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#2D3436",
+    color: COLORS.textPrimary,
     marginBottom: 4,
   },
   subtitle: {

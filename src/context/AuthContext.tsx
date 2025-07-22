@@ -1,8 +1,69 @@
 // frontend/src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import api from "../services/api";
+
+// Detectar si estamos en web
+const isWeb = Platform.OS === 'web';
+
+// Clase de almacenamiento compatible con web y móvil
+class AuthStorage {
+  async getItem(key: string): Promise<string | null> {
+    if (isWeb) {
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        console.warn('Error al acceder a localStorage:', error);
+        return null;
+      }
+    }
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (error) {
+      console.warn('Error al acceder a SecureStore:', error);
+      return null;
+    }
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    if (isWeb) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (error) {
+        console.warn('Error al guardar en localStorage:', error);
+        throw error;
+      }
+    } else {
+      try {
+        await SecureStore.setItemAsync(key, value);
+      } catch (error) {
+        console.warn('Error al guardar en SecureStore:', error);
+        throw error;
+      }
+    }
+  }
+
+  async removeItem(key: string): Promise<void> {
+    if (isWeb) {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.warn('Error al eliminar de localStorage:', error);
+        throw error;
+      }
+    } else {
+      try {
+        await SecureStore.deleteItemAsync(key);
+      } catch (error) {
+        console.warn('Error al eliminar de SecureStore:', error);
+        throw error;
+      }
+    }
+  }
+}
+
+const storage = new AuthStorage();
 
 export interface User {
   id: string;
@@ -12,7 +73,7 @@ export interface User {
   email: string;
   city: string;
   category: string;
-  level: string;
+  nivel: string;
   hand: string;
   position: string;
   profileImage?: string;
@@ -47,13 +108,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const loadStoredData = async () => {
       try {
-        const storedToken = await SecureStore.getItemAsync("userToken");
-        const storedUser = await SecureStore.getItemAsync("userData");
+        const [storedToken, storedUser] = await Promise.all([
+          storage.getItem("userToken"),
+          storage.getItem("userData")
+        ]);
+
+        console.log('Datos almacenados cargados:', { storedToken, storedUser: storedUser ? 'existe' : 'no existe' });
 
         if (storedToken && storedUser) {
-          api.defaults.headers.common[
-            "Authorization"
-          ] = `Bearer ${storedToken}`;
+          api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
         }
@@ -69,14 +132,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const login = async (dniOrEmail: string, password: string) => {
     try {
+      console.log('Iniciando sesión con:', { dniOrEmail });
       const response = await api.post("/auth/login", {
         dniOrEmail,
         password,
       });
       const { token, user } = response.data;
+      console.log('Respuesta del servidor:', { token, user: user ? 'usuario recibido' : 'sin usuario' });
 
-      await SecureStore.setItemAsync("userToken", token);
-      await SecureStore.setItemAsync("userData", JSON.stringify(user));
+      // Guardar en el almacenamiento adecuado
+      await storage.setItem("userToken", token);
+      await storage.setItem("userData", JSON.stringify(user));
 
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       setToken(token);
@@ -149,8 +215,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const { token, user: userData } = response.data;
 
         // Guardar token y datos del usuario
-        await SecureStore.setItemAsync("userToken", token);
-        await SecureStore.setItemAsync("userData", JSON.stringify(userData));
+        await storage.setItem("userToken", token);
+        await storage.setItem("userData", JSON.stringify(userData));
 
         // Configurar el token en las cabeceras de las peticiones futuras
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -208,7 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (userData.email) formData.append("email", userData.email);
       if (userData.city) formData.append("city", userData.city);
       if (userData.category) formData.append("category", userData.category);
-      if (userData.level) formData.append("level", userData.level);
+      if (userData.nivel) formData.append("nivel", userData.nivel);
       if (userData.hand) formData.append("hand", userData.hand);
       if (userData.position) formData.append("position", userData.position);
 
@@ -241,7 +307,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (response.data.user) {
         const updatedUser = { ...user, ...response.data.user };
         setUser(updatedUser);
-        await SecureStore.setItemAsync("userData", JSON.stringify(updatedUser));
+        await storage.setItem("userData", JSON.stringify(updatedUser));
       }
     } catch (error: any) {
       console.error("Error al actualizar el perfil:", error);
@@ -255,14 +321,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async () => {
     try {
-      await SecureStore.deleteItemAsync("userToken");
-      await SecureStore.deleteItemAsync("userData");
-
-      setToken(null);
-      setUser(null);
+      await storage.removeItem("userToken");
+      await storage.removeItem("userData");
       delete api.defaults.headers.common["Authorization"];
+      setUser(null);
+      setToken(null);
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      console.error('Error al cerrar sesión:', error);
       throw error;
     }
   };

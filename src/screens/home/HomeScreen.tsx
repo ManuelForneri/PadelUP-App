@@ -11,21 +11,8 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../../types";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { COLORS } from "../../theme/colors";
 import Header from "../../components/home/Header";
-
-// Application colors
-const COLORS = {
-  primary: "#FF5A5F", // Coral red
-  secondary: "#00A699", // Teal
-  dark: "#2D3436", // Dark gray
-  light: "#F7F9F9", // Very light gray
-  white: "#FFFFFF",
-  gray: "#A4A4A4",
-  error: "#E74C3C",
-  success: "#2ECC71",
-  warning: "#F39C12",
-  info: "#3498DB",
-};
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.85;
@@ -66,14 +53,14 @@ const baseShadow = {
 };
 
 const baseCard = {
-  backgroundColor: COLORS.white,
+  backgroundColor: COLORS.backgroundLight,
   borderRadius: 16, // Slightly more rounded corners
   padding: 18, // Increased padding for better spacing
   ...baseShadow,
 };
 
 const baseText = {
-  color: COLORS.dark,
+  color: COLORS.textDark,
   includeFontPadding: false, // Better text alignment
   textAlignVertical: "center" as const, // Type assertion for React Native
 };
@@ -94,7 +81,7 @@ const HomeScreen = () => {
       id: 2,
       time: "20:30",
       date: "SÁB 11 JUN",
-      location: "Club PadelSAG",
+      location: "Club Padel UP",
       level: "Avanzado",
     },
   ];
@@ -332,7 +319,7 @@ const styles = StyleSheet.create({
   // Layout
   container: {
     flex: 1,
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.backgroundLight,
   },
   scrollView: {
     flex: 1,
@@ -346,7 +333,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: CONTAINER_PADDING,
     paddingTop: CONTAINER_PADDING + 10, // Extra padding at top for status bar
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     ...baseShadow,
@@ -393,7 +380,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
     borderRadius: 12, // More rounded corners
     padding: 14, // Slightly more padding
     marginHorizontal: CONTAINER_PADDING,
@@ -513,7 +500,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
   actionButtonText: {
-    color: COLORS.white,
+    color: COLORS.textPrimary,
     fontWeight: "700", // Bolder text
     fontSize: 15, // Slightly larger
     letterSpacing: 0.3, // Slightly more spaced letters
@@ -602,7 +589,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bookButtonText: {
-    color: COLORS.white,
+    color: COLORS.textPrimary,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -660,7 +647,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.backgroundLight,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,

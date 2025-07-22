@@ -30,7 +30,7 @@ const { width } = Dimensions.get("window");
 // Constantes para los selectores
 const CATEGORIAS = ["8va", "7ma", "6ta", "5ta", "4ta", "3ra", "2da", "1ra"];
 
-const NIVELES = ["Inicial", "Medio", "Avanzado"];
+const NIVELES = ["inicial", "medio", "fuerte"]; // Valores en minúsculas para coincidir con el backend
 
 type ProfileScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -49,9 +49,10 @@ const ProfileScreen = () => {
     dni: user?.dni || "",
     email: user?.email || "",
     category: user?.category || "",
-    level: user?.level || "",
+    nivel: user?.nivel || "inicial",
     hand: user?.hand || "Derecha",
     position: user?.position || "Drive",
+    city: user?.city || "",
   });
 
   const pickImage = async (useCamera = false) => {
@@ -100,7 +101,15 @@ const ProfileScreen = () => {
     try {
       setIsLoading(true);
       await updateProfile({
-        ...formData,
+        dni: formData.dni,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        ...(formData.city && { city: formData.city }), // Solo incluir city si tiene valor
+        category: formData.category,
+        nivel: formData.nivel,
+        hand: formData.hand,
+        position: formData.position,
         profileImage: profileImage || undefined,
       });
       setIsEditing(false);
@@ -146,13 +155,11 @@ const ProfileScreen = () => {
   }
 
   const getSkillLevel = (level: string) => {
-    switch (level?.toLowerCase()) {
+    switch (level) {
       case "inicial":
-        return "Principiante";
+        return "Inicial";
       case "medio":
-        return "Intermedio";
-      case "avanzado":
-        return "Avanzado";
+        return "Medio";
       case "fuerte":
         return "Fuerte";
       default:
@@ -263,15 +270,19 @@ const ProfileScreen = () => {
               <Text style={styles.label}>Nivel</Text>
               <View style={styles.pickerContainer}>
                 <Picker
-                  selectedValue={formData.level}
+                  selectedValue={formData.nivel}
                   onValueChange={(itemValue) =>
-                    setFormData({ ...formData, level: itemValue })
+                    setFormData({ ...formData, nivel: itemValue })
                   }
                   style={styles.picker}
                 >
                   <Picker.Item label="Selecciona un nivel" value="" />
                   {NIVELES.map((nivel) => (
-                    <Picker.Item key={nivel} label={nivel} value={nivel} />
+                    <Picker.Item
+                      key={nivel}
+                      label={nivel.charAt(0).toUpperCase() + nivel.slice(1)}
+                      value={nivel}
+                    />
                   ))}
                 </Picker>
               </View>
@@ -387,16 +398,16 @@ const ProfileScreen = () => {
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Nivel de Juego</Text>
-                <Text style={styles.infoText}>{getSkillLevel(user.level)}</Text>
+                <Text style={styles.infoText}>{getSkillLevel(user.nivel)}</Text>
                 <View style={styles.skillLevel}>
                   <View
                     style={[
                       styles.skillBar,
                       {
                         width:
-                          user.level === "inicial"
+                          user.nivel === "inicial"
                             ? "33%"
-                            : user.level === "medio"
+                            : user.nivel === "medio"
                             ? "66%"
                             : "100%",
                       },
@@ -486,9 +497,10 @@ const ProfileScreen = () => {
                   dni: user.dni,
                   email: user.email,
                   category: user.category || "",
-                  level: user.level || "",
+                  nivel: user.nivel || "inicial",
                   hand: user.hand || "Derecha",
                   position: user.position || "Drive",
+                  city: user.city || "",
                 });
                 setProfileImage(user.profileImage || null);
               }}

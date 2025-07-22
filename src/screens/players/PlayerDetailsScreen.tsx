@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,26 +13,84 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types";
 import { useTheme } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "../../theme/colors";
 import playerService from "../../services/api/player.service";
 import { Player } from "../../../types";
-
-const COLORS = {
-  primary: "#FF5A5F", // Rojo coral
-  secondary: "#00A699", // Verde agua
-  dark: "#2D3436", // Gris oscuro
-  light: "#F7F9F9", // Gris muy claro
-  white: "#FFFFFF",
-  gray: "#A4A4A4",
-  error: "#E74C3C",
-};
+import { useAuth } from "../../context/AuthContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PlayerDetails">;
 
-const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
+const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { colors } = useTheme();
   const { playerId } = route.params;
+  const { user } = useAuth();
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [voting, setVoting] = useState<boolean>(false);
+
+  // Función para manejar el voto
+  const handleVote = useCallback(async (voteType: "low" | "good" | "high") => {
+    if (!user?.id) {
+      Alert.alert("Error", "Debes iniciar sesión para poder votar.");
+      navigation.navigate("Login");
+      return;
+    }
+
+    if (!playerId) {
+      Alert.alert("Error", "No se pudo identificar al jugador a votar.");
+      return;
+    }
+
+    try {
+      setVoting(true);
+      
+      // Mapear los tipos de voto de la interfaz a los que espera el backend
+      const voteTypeMap = {
+        low: "upVotes",    // Si está bajo, necesita subir de categoría (upVote)
+        good: "good",      // Si está bien, no debería afectar la categoría
+        high: "downVotes"  // Si está alto, necesita bajar de categoría (downVote)
+      };
+
+      // Solo enviar el voto si no es "good" (que no afecta la categoría)
+      if (voteType !== "good") {
+        await playerService.votePlayer(
+          playerId,
+          voteTypeMap[voteType] as "upVotes" | "downVotes",
+          user.id
+        );
+      }
+
+      // Mostrar mensaje de confirmación
+      let message = "";
+      switch (voteType) {
+        case "high":
+          message =
+            "Has votado que el jugador está en una categoría más alta de lo que debería";
+          break;
+        case "good":
+          message = "Has votado que el jugador está en la categoría correcta";
+          break;
+        case "low":
+          message =
+            "Has votado que el jugador está en una categoría más baja de lo que debería";
+          break;
+      }
+
+      Alert.alert("Voto registrado", message, [
+        { text: "OK", onPress: () => navigation.goBack() }
+      ]);
+    } catch (error: any) {
+      console.error("Error al registrar el voto:", error);
+      
+      // Mostrar mensaje de error específico del backend si está disponible
+      const errorMessage = error.response?.data?.message || 
+                         "No se pudo registrar tu voto. Intenta de nuevo.";
+      
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setVoting(false);
+    }
+  }, [user, playerId, navigation]);
 
   // Cargar detalles del jugador al montar el componente
   useEffect(() => {
@@ -123,7 +181,9 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: COLORS.white }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: COLORS.backgroundLight }]}
+    >
       {/* Encabezado con foto de perfil */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
@@ -140,7 +200,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
             </View>
           )}
         </View>
-        <Text style={[styles.playerName, { color: COLORS.dark }]}>
+        <Text style={[styles.playerName, { color: COLORS.textDark }]}>
           {player.firstName} {player.lastName}
         </Text>
         <Text style={[styles.playerCategory, { color: COLORS.primary }]}>
@@ -149,14 +209,16 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
       </View>
 
       {/* Información del jugador */}
-      <View style={[styles.section, { backgroundColor: COLORS.white }]}>
-        <Text style={[styles.sectionTitle, { color: COLORS.dark }]}>
+      <View
+        style={[styles.section, { backgroundColor: COLORS.backgroundLight }]}
+      >
+        <Text style={[styles.sectionTitle, { color: COLORS.textDark }]}>
           Información del Jugador
         </Text>
 
         <View style={styles.infoRow}>
           <Ionicons name="trophy" size={20} color={COLORS.primary} />
-          <Text style={[styles.infoText, { color: COLORS.dark }]}>
+          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
             Nivel: <Text style={styles.infoValue}>{player.level}</Text>
           </Text>
         </View>
@@ -167,7 +229,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
             size={20}
             color={COLORS.primary}
           />
-          <Text style={[styles.infoText, { color: COLORS.dark }]}>
+          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
             Mano hábil: <Text style={styles.infoValue}>{player.hand}</Text>
           </Text>
         </View>
@@ -178,7 +240,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
             size={20}
             color={COLORS.primary}
           />
-          <Text style={[styles.infoText, { color: COLORS.dark }]}>
+          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
             Posición: <Text style={styles.infoValue}>{player.position}</Text>
           </Text>
         </View>
@@ -186,7 +248,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
         <View style={styles.infoRow}>
           <Ionicons name="mail" size={20} color={COLORS.primary} />
           <Text
-            style={[styles.infoText, { color: COLORS.dark }]}
+            style={[styles.infoText, { color: COLORS.textDark }]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -196,7 +258,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
 
         <View style={styles.infoRow}>
           <Ionicons name="calendar" size={20} color={COLORS.primary} />
-          <Text style={[styles.infoText, { color: COLORS.dark }]}>
+          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
             Miembro desde:{" "}
             <Text style={styles.infoValue}>{formatDate(player.createdAt)}</Text>
           </Text>
@@ -204,8 +266,13 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
       </View>
 
       {/* Estadísticas (puedes expandir esta sección según necesites) */}
-      <View style={[styles.statsContainer, { backgroundColor: COLORS.white }]}>
-        <Text style={[styles.sectionTitle, { color: COLORS.dark }]}>
+      <View
+        style={[
+          styles.statsContainer,
+          { backgroundColor: COLORS.backgroundLight },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: COLORS.textDark }]}>
           Estadísticas
         </Text>
         <Text style={[styles.comingSoon, { color: COLORS.gray }]}>
@@ -214,7 +281,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
       </View>
       {/* Sección de Valoración */}
       <View style={[styles.section, { marginBottom: 20 }]}>
-        <Text style={[styles.sectionTitle, { color: COLORS.dark }]}>
+        <Text style={[styles.sectionTitle, { color: COLORS.textDark }]}>
           Valoración del Jugador
         </Text>
         <Text
@@ -228,19 +295,41 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
 
         <View style={styles.ratingContainer}>
           <TouchableOpacity
-            style={[styles.ratingButton, styles.ratingButtonLow]}
+            style={[
+              styles.ratingButton, 
+              styles.ratingButtonLow,
+              voting && styles.disabledButton
+            ]}
             onPress={() => handleVote("low")}
+            disabled={voting}
           >
-            <Ionicons name="arrow-up-circle" size={20} color="#fff" />
-            <Text style={styles.ratingButtonText}>Está Pasado</Text>
+            {voting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Ionicons name="arrow-up-circle" size={20} color="#fff" />
+                <Text style={styles.ratingButtonText}>Está Pasado</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.ratingButton, styles.ratingButtonGood]}
+            style={[
+              styles.ratingButton, 
+              styles.ratingButtonGood,
+              voting && styles.disabledButton
+            ]}
             onPress={() => handleVote("good")}
+            disabled={voting}
           >
-            <Ionicons name="checkmark-circle" size={20} color="#fff" />
-            <Text style={styles.ratingButtonText}>Está bien</Text>
+            {voting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.ratingButtonText}>Está bien</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -252,50 +341,23 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route }) => {
   );
 };
 
-// Función para manejar el voto
-const handleVote = async (voteType: "low" | "good" | "high") => {
-  try {
-    // Aquí implementarías la lógica para enviar el voto al servidor
-    // Por ejemplo: await playerService.ratePlayer(playerId, voteType);
 
-    // Mostrar mensaje de confirmación
-    let message = "";
-    switch (voteType) {
-      case "high":
-        message =
-          "Has votado que el jugador está en una categoría más alta de lo que debería";
-        break;
-      case "good":
-        message = "Has votado que el jugador está en la categoría correcta";
-        break;
-      case "low":
-        message =
-          "Has votado que el jugador está en una categoría más baja de lo que debería";
-        break;
-    }
-
-    Alert.alert("Voto registrado", message);
-  } catch (error) {
-    console.error("Error al registrar el voto:", error);
-    Alert.alert("Error", "No se pudo registrar tu voto. Intenta de nuevo.");
-  }
-};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
   },
   header: {
     alignItems: "center",
     paddingVertical: 30,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(0,0,0,0.05)",
   },
@@ -316,14 +378,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   avatarText: {
-    color: COLORS.white,
+    color: COLORS.textLight,
     fontSize: 56,
     fontWeight: "bold",
   },
   playerName: {
     fontSize: 28,
     fontWeight: "bold",
-    color: COLORS.dark,
+    color: COLORS.textDark,
     marginBottom: 5,
     textAlign: "center",
   },
@@ -339,7 +401,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   section: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
     borderRadius: 12,
     padding: 20,
     margin: 16,
@@ -354,7 +416,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: COLORS.dark,
+    color: COLORS.textDark,
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
@@ -369,12 +431,12 @@ const styles = StyleSheet.create({
   infoText: {
     marginLeft: 12,
     fontSize: 15,
-    color: COLORS.dark,
+    color: COLORS.textDark,
     flex: 1,
   },
   infoValue: {
     fontWeight: "600",
-    color: COLORS.dark,
+    color: COLORS.textDark,
   },
   ratingContainer: {
     flexDirection: "row",
@@ -407,10 +469,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#F44336", // Rojo para "Está difícil"
   },
   ratingButtonText: {
-    color: COLORS.white,
-    marginLeft: 6,
+    color: "#fff",
+    marginLeft: 8,
     fontWeight: "600",
     fontSize: 13,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   ratingHelpText: {
     fontSize: 12,
@@ -420,7 +485,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   statsContainer: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundLight,
     borderRadius: 12,
     padding: 20,
     margin: 16,

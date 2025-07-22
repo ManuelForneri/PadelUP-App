@@ -48,7 +48,26 @@ const playerService = {
       const response = await http.get(`/players/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error al obtener los datos del jugador:', error);
+      console.error(`Error al obtener el jugador con ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Vota por un jugador
+   * @param playerId ID del jugador a votar
+   * @param voteType Tipo de voto ('upVotes' o 'downVotes')
+   * @param voterId ID del usuario que está votando
+   */
+  async votePlayer(playerId: string, voteType: 'upVotes' | 'downVotes', voterId: string) {
+    try {
+      const response = await http.post(`/vote/${playerId}`, {
+        voteType,
+        voterId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al votar por el jugador:', error);
       throw error;
     }
   },

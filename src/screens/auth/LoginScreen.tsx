@@ -20,17 +20,8 @@ import * as Yup from "yup";
 import { useAuth } from "../../context/AuthContext";
 import { RootStackParamList } from "../../types/navigation";
 import { Ionicons } from "@expo/vector-icons";
-
+import { COLORS } from "../../theme/colors";
 // Paleta de colores
-const COLORS = {
-  primary: "#FF5A5F", // Rojo coral
-  secondary: "#00A699", // Verde agua
-  dark: "#2D3436", // Gris oscuro
-  light: "#F7F9F9", // Gris muy claro
-  white: "#FFFFFF",
-  gray: "#A4A4A4",
-  error: "#E74C3C",
-};
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -52,9 +43,37 @@ const LoginScreen = () => {
     password: string;
   }) => {
     try {
+      console.log("Iniciando sesión con:", values.dniOrEmail);
       await login(values.dniOrEmail, values.password);
+      console.log("Inicio de sesión exitoso");
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Error al iniciar sesión");
+      console.error("Error en handleLogin:", {
+        message: error.message,
+        response: error.response?.data,
+        code: error.code,
+        stack: error.stack,
+      });
+
+      let errorMessage = error.message || "Error al iniciar sesión";
+
+      // Manejar errores específicos
+      if (error.response) {
+        // El servidor respondió con un error
+        if (error.response.status === 401) {
+          errorMessage =
+            "Credenciales incorrectas. Por favor, verifica tus datos.";
+        } else if (error.response.status >= 500) {
+          errorMessage =
+            "Error en el servidor. Por favor, inténtalo más tarde.";
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.message === "Network Error") {
+        errorMessage =
+          "No se pudo conectar al servidor. Verifica tu conexión a Internet.";
+      }
+
+      Alert.alert("Error", errorMessage);
     }
   };
 
@@ -67,7 +86,10 @@ const LoginScreen = () => {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.backgroundLight}
+      />
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
@@ -75,7 +97,6 @@ const LoginScreen = () => {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Ionicons name="tennisball" size={60} color={COLORS.primary} />
-            <Text style={styles.appName}>PadelSAG</Text>
           </View>
           <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
         </View>
@@ -189,7 +210,7 @@ const LoginScreen = () => {
                 activeOpacity={0.8}
               >
                 {isLoading ? (
-                  <ActivityIndicator color={COLORS.white} size="small" />
+                  <ActivityIndicator color={COLORS.primary} size="small" />
                 ) : (
                   <Text style={styles.buttonText}>Iniciar Sesión</Text>
                 )}
@@ -223,7 +244,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.backgroundPrimary,
   },
 
   scrollContainer: {
@@ -242,12 +263,12 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: "bold",
-    color: COLORS.dark,
+    color: COLORS.textPrimary,
     marginTop: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.gray,
+    color: COLORS.textSecondary,
     textAlign: "center",
     marginTop: 5,
   },
@@ -261,14 +282,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: COLORS.dark,
+    color: COLORS.textPrimary,
     marginBottom: 8,
     fontWeight: "500",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.backgroundLight,
     borderRadius: 10,
     paddingHorizontal: 15,
     height: 50,
@@ -278,7 +299,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: "100%",
-    color: COLORS.dark,
+    color: COLORS.textPrimary,
     fontSize: 16,
     paddingLeft: 10,
   },
@@ -315,7 +336,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
   },
   buttonText: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -327,6 +348,9 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 13,
     fontWeight: "500",
+    textShadowColor: COLORS.gray,
+    textShadowOffset: { width: 0, height: 0.5 },
+    textShadowRadius: 1,
   },
   dividerContainer: {
     flexDirection: "row",
@@ -356,6 +380,9 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 14,
     fontWeight: "600",
+    textShadowColor: COLORS.gray,
+    textShadowOffset: { width: 0, height: 0.5 },
+    textShadowRadius: 1,
   },
 });
 

@@ -1,5 +1,34 @@
 import axios, { AxiosRequestConfig, AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+// Detectar si estamos en web
+const isWeb = Platform.OS === 'web';
+
+// Clase de almacenamiento compatible con web y móvil
+class ApiStorage {
+  async getItem(key: string): Promise<string | null> {
+    if (isWeb) {
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        console.warn('Error al acceder a localStorage:', error);
+        return null;
+      }
+    }
+    
+    // Para móviles, usamos expo-secure-store dinámicamente
+    try {
+      // Importar dinámicamente para evitar problemas en web
+      const { getItemAsync } = require('expo-secure-store');
+      return await getItemAsync(key);
+    } catch (error) {
+      console.warn('Error al acceder a SecureStore:', error);
+      return null;
+    }
+  }
+}
+
+const storage = new ApiStorage();
 
 // Configuración de la API
 const API_URL = __DEV__
@@ -28,7 +57,7 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await SecureStore.getItemAsync('userToken');
+      const token = await storage.getItem('userToken');
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -55,11 +84,21 @@ api.interceptors.response.use(
     });
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Limpiar datos de autenticación
-      SecureStore.deleteItemAsync('userToken').catch(console.error);
-      SecureStore.deleteItemAsync('userData').catch(console.error);
+      // Limpiar datos de autenticación usando el almacenamiento unificado
+      try {
+        const { deleteItemAsync } = isWeb 
+          ? { deleteItemAsync: (key: string) => { localStorage.removeItem(key); return Promise.resolve(); } }
+          : await import('expo-secure-store');
+        
+        await Promise.all([
+          deleteItemAsync('userToken'),
+          deleteItemAsync('userData')
+        ]);
+      } catch (storageError) {
+        console.error('Error al limpiar datos de autenticación:', storageError);
+      }
     }
     return Promise.reject(error);
   }
