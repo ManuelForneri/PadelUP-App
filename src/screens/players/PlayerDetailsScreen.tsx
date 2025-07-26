@@ -2,17 +2,18 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Image,
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
   Alert,
+  StyleSheet,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types";
 import { useTheme } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { GLOBAL_STYLES, TYPOGRAPHY, COMPONENTS } from "../../theme/styles";
 import { COLORS } from "../../theme/colors";
 import playerService from "../../services/api/player.service";
 import { Player } from "../../../types";
@@ -27,6 +28,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [voting, setVoting] = useState<boolean>(false);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
 
   // Función para manejar el voto
   const handleVote = useCallback(async (voteType: "low" | "good" | "high") => {
@@ -104,6 +106,11 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         if (response && response.data) {
           console.log("Datos completos del jugador:", response.data);
           setPlayer(response.data);
+          
+          // Verificar si el usuario actual ya votó por este jugador
+          if (user?.id && response.data.votes?.voters?.includes(user.id)) {
+            setHasVoted(true);
+          }
         } else {
           console.warn("No se recibieron datos del jugador");
         }
@@ -122,7 +129,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   if (loading || !player) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.green[500]} />
       </View>
     );
   }
@@ -182,7 +189,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: COLORS.backgroundLight }]}
+      style={[styles.container, { backgroundColor: COLORS.neutral[50] }]}
     >
       {/* Encabezado con foto de perfil */}
       <View style={styles.header}>
@@ -193,324 +200,276 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               style={styles.avatar}
             />
           ) : (
-            <View style={[styles.avatar, { backgroundColor: COLORS.primary }]}>
+            <View style={[styles.avatar, { backgroundColor: COLORS.green[500] }]}>
               <Text style={styles.avatarText}>
-                {player.firstName.charAt(0).toUpperCase()}
+                {player.firstName.charAt(0)}
+                {player.lastName?.charAt(0) || ''}
               </Text>
             </View>
           )}
         </View>
-        <Text style={[styles.playerName, { color: COLORS.textDark }]}>
-          {player.firstName} {player.lastName}
-        </Text>
-        <Text style={[styles.playerCategory, { color: COLORS.primary }]}>
-          {player.category}
-        </Text>
+        <View style={styles.playerInfo}>
+          <Text style={styles.playerName}>
+            {player.firstName} {player.lastName}
+          </Text>
+          <Text style={styles.playerCategory}>{player.category}</Text>
+          <Text style={styles.playerLevel}>Nivel {player.level}</Text>
+        </View>
       </View>
 
-      {/* Información del jugador */}
-      <View
-        style={[styles.section, { backgroundColor: COLORS.backgroundLight }]}
-      >
-        <Text style={[styles.sectionTitle, { color: COLORS.textDark }]}>
-          Información del Jugador
-        </Text>
-
+      {/* Sección de información personal */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Información Personal</Text>
         <View style={styles.infoRow}>
-          <Ionicons name="trophy" size={20} color={COLORS.primary} />
-          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
-            Nivel: <Text style={styles.infoValue}>{player.level}</Text>
+          <Ionicons name="mail" size={20} color={COLORS.green[500]} />
+          <Text style={styles.infoText} numberOfLines={1} ellipsizeMode="tail">
+            {player.email || 'No disponible'}
           </Text>
         </View>
-
         <View style={styles.infoRow}>
-          <Ionicons
-            name={getHandIcon(player.hand || "")}
-            size={20}
-            color={COLORS.primary}
-          />
-          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
-            Mano hábil: <Text style={styles.infoValue}>{player.hand}</Text>
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons
-            name={getPositionIcon(player.position || "")}
-            size={20}
-            color={COLORS.primary}
-          />
-          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
-            Posición: <Text style={styles.infoValue}>{player.position}</Text>
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="mail" size={20} color={COLORS.primary} />
-          <Text
-            style={[styles.infoText, { color: COLORS.textDark }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {player.email}
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar" size={20} color={COLORS.primary} />
-          <Text style={[styles.infoText, { color: COLORS.textDark }]}>
-            Miembro desde:{" "}
-            <Text style={styles.infoValue}>{formatDate(player.createdAt)}</Text>
+          <Ionicons name="calendar" size={20} color={COLORS.green[500]} />
+          <Text style={styles.infoText}>
+            Miembro desde: {player.createdAt ? formatDate(player.createdAt) : 'No disponible'}
           </Text>
         </View>
       </View>
 
-      {/* Estadísticas (puedes expandir esta sección según necesites) */}
-      <View
-        style={[
-          styles.statsContainer,
-          { backgroundColor: COLORS.backgroundLight },
-        ]}
-      >
-        <Text style={[styles.sectionTitle, { color: COLORS.textDark }]}>
-          Estadísticas
-        </Text>
-        <Text style={[styles.comingSoon, { color: COLORS.gray }]}>
-          Próximamente: Estadísticas detalladas del jugador
-        </Text>
-      </View>
-      {/* Sección de Valoración */}
-      <View style={[styles.section, { marginBottom: 20 }]}>
-        <Text style={[styles.sectionTitle, { color: COLORS.textDark }]}>
-          Valoración del Jugador
-        </Text>
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: COLORS.gray, fontSize: 14, opacity: 0.8 },
-          ]}
-        >
-          ¿Crees que la categoría asignada es la correcta?
-        </Text>
-
-        <View style={styles.ratingContainer}>
-          <TouchableOpacity
-            style={[
-              styles.ratingButton, 
-              styles.ratingButtonLow,
-              voting && styles.disabledButton
-            ]}
-            onPress={() => handleVote("low")}
-            disabled={voting}
-          >
-            {voting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <>
-                <Ionicons name="arrow-up-circle" size={20} color="#fff" />
-                <Text style={styles.ratingButtonText}>Está Pasado</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.ratingButton, 
-              styles.ratingButtonGood,
-              voting && styles.disabledButton
-            ]}
-            onPress={() => handleVote("good")}
-            disabled={voting}
-          >
-            {voting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.ratingButtonText}>Está bien</Text>
-              </>
-            )}
-          </TouchableOpacity>
+      {/* Sección de características de juego */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Características de Juego</Text>
+        <View style={styles.infoRow}>
+          <Ionicons name={getHandIcon(player.hand || 'Derecha')} size={20} color={COLORS.green[500]} />
+          <Text style={styles.infoText}>Mano hábil: {player.hand || 'No especificado'}</Text>
         </View>
-
-        <Text style={[styles.ratingHelpText, { color: COLORS.gray }]}>
-          Tu voto ayuda a mantener la equidad en las categorías
-        </Text>
+        <View style={styles.infoRow}>
+          <Ionicons name={getPositionIcon(player.position || '')} size={20} color={COLORS.green[500]} />
+          <Text style={styles.infoText}>Posición preferida: {player.position || 'No especificada'}</Text>
+        </View>
       </View>
+
+      {/* Sección de votación */}
+      {!hasVoted && user?.id !== player._id && (
+        <View style={styles.votingSection}>
+          <Text style={styles.votingTitle}>¿Este jugador está en la categoría correcta?</Text>
+          <View style={styles.votingButtons}>
+            <TouchableOpacity
+              style={[styles.voteButton, styles.voteButtonHigh]}
+              onPress={() => handleVote('high')}
+              disabled={voting}
+            >
+              <Text style={styles.voteButtonText}>Muy alto</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.voteButton, styles.voteButtonGood]}
+              onPress={() => handleVote('good')}
+              disabled={voting}
+            >
+              <Text style={styles.voteButtonText}>Correcto</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.voteButton, styles.voteButtonLow]}
+              onPress={() => handleVote('low')}
+              disabled={voting}
+            >
+              <Text style={styles.voteButtonText}>Muy bajo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {hasVoted && (
+        <View style={styles.votingMessage}>
+          <Ionicons name="checkmark-circle" size={24} color={COLORS.green[500]} />
+          <Text style={styles.votingMessageText}>¡Ya has votado por este jugador!</Text>
+        </View>
+      )}
     </ScrollView>
   );
 };
 
-
-
+// Usando estilos en línea con GLOBAL_STYLES y la nueva paleta de colores
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.backgroundLight,
+    backgroundColor: COLORS.neutral[0],
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.backgroundLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.neutral[0],
   },
   header: {
-    alignItems: "center",
-    paddingVertical: 30,
-    backgroundColor: COLORS.backgroundLight,
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: COLORS.neutral[0],
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
+    borderBottomColor: COLORS.neutral[100],
   },
   avatarContainer: {
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    marginBottom: 15,
   },
   avatar: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.primary,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarText: {
-    color: COLORS.textLight,
+    ...TYPOGRAPHY.h1,
+    color: COLORS.neutral[0],
     fontSize: 56,
-    fontWeight: "bold",
+    fontWeight: '700' as const,
+  },
+  playerInfo: {
+    alignItems: 'center',
   },
   playerName: {
+    ...TYPOGRAPHY.h1,
     fontSize: 28,
-    fontWeight: "bold",
-    color: COLORS.textDark,
+    color: COLORS.neutral[900],
     marginBottom: 5,
-    textAlign: "center",
+    fontWeight: '700' as const,
   },
   playerCategory: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.primary,
+    ...TYPOGRAPHY.body1,
+    color: COLORS.green[500],
     marginBottom: 5,
+    fontWeight: '500' as const,
   },
-  playerCity: {
-    fontSize: 14,
-    color: COLORS.gray,
-    marginBottom: 15,
+  playerLevel: {
+    ...TYPOGRAPHY.body2,
+    color: COLORS.neutral[600],
+    fontWeight: '400' as const,
   },
   section: {
-    backgroundColor: COLORS.backgroundLight,
-    borderRadius: 12,
     padding: 20,
-    margin: 16,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.textDark,
-    marginBottom: 16,
-    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
+    borderBottomColor: COLORS.neutral[100],
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.green[600],
+    marginBottom: 15,
+    fontWeight: '600' as const,
   },
   infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-    paddingHorizontal: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   infoText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: COLORS.textDark,
-    flex: 1,
+    ...TYPOGRAPHY.body1,
+    color: COLORS.neutral[800],
+    marginLeft: 10,
+    fontWeight: '400' as const,
   },
-  infoValue: {
-    fontWeight: "600",
-    color: COLORS.textDark,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 15,
-    flexWrap: "wrap",
-  },
-  ratingButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 25,
-    marginBottom: 10,
-    minWidth: "48%",
-    justifyContent: "center",
-    shadowColor: "#000",
+  votingSection: {
+    padding: 20,
+    backgroundColor: COLORS.neutral[50],
+    margin: 15,
+    borderRadius: 10,
+    shadowColor: COLORS.neutral[900],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  ratingButtonLow: {
-    backgroundColor: "#4CAF50", // Verde para "Está bien"
-  },
-  ratingButtonGood: {
-    backgroundColor: "#FFC107", // Amarillo para "Está fácil"
-  },
-  ratingButtonHigh: {
-    backgroundColor: "#F44336", // Rojo para "Está difícil"
-  },
-  ratingButtonText: {
-    color: "#fff",
-    marginLeft: 8,
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  ratingHelpText: {
-    fontSize: 12,
-    textAlign: "center",
-    color: COLORS.gray,
-    marginTop: 12,
-    lineHeight: 18,
-  },
-  statsContainer: {
-    backgroundColor: COLORS.backgroundLight,
-    borderRadius: 12,
-    padding: 20,
-    margin: 16,
-    marginTop: 0,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 3,
   },
-  comingSoon: {
-    textAlign: "center",
-    color: COLORS.gray,
-    fontStyle: "italic",
-    marginVertical: 10,
+  votingTitle: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.neutral[900],
+    marginBottom: 15,
+    textAlign: 'center' as const,
+    fontWeight: '600' as const,
   },
-
-  // Estilos para los íconos
+  votingButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  voteButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginHorizontal: 5,
+  },
+  voteButtonHigh: {
+    backgroundColor: COLORS.green[300],
+  },
+  voteButtonGood: {
+    backgroundColor: COLORS.green[500],
+  },
+  voteButtonLow: {
+    backgroundColor: COLORS.green[700],
+  },
+  voteButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.neutral[0],
+    fontWeight: '500' as const,
+    textAlign: 'center' as const,
+  },
+  votingMessage: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    padding: 15,
+    backgroundColor: COLORS.green[50],
+    margin: 15,
+    borderRadius: 8,
+  },
+  votingMessageText: {
+    ...TYPOGRAPHY.body1,
+    color: COLORS.green[800],
+    marginLeft: 10,
+    fontWeight: '500' as const,
+    textAlign: 'center' as const,
+  },
   iconContainer: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255, 90, 95, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: `${COLORS.green[400]}20`,
+    ...GLOBAL_STYLES.flexCenter,
+  },
+  icon: {
+    color: COLORS.green[400],
+  },
+  statsRow: {
+    ...GLOBAL_STYLES.flexRowBetween,
+    marginBottom: 15,
+  },
+  statItem: {
+    ...GLOBAL_STYLES.flexCenter,
+    flex: 1,
+  },
+  statValue: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.green[800],
+    marginBottom: 5,
+  },
+  statLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.neutral[500],
+    textAlign: 'center',
+  },
+  bioText: {
+    ...TYPOGRAPHY.body1,
+    lineHeight: 22,
+  },
+  emptyState: {
+    ...TYPOGRAPHY.body2,
+    textAlign: 'center',
+    color: COLORS.neutral[500],
+    fontStyle: 'italic',
+    marginVertical: 20,
+  },
+  actionButton: {
+    ...COMPONENTS.button.primary,
+    marginTop: 20,
+    ...GLOBAL_STYLES.flexCenter,
+    padding: 15,
   },
 });
 
