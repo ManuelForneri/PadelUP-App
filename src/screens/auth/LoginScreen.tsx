@@ -129,13 +129,13 @@ const LoginScreen = () => {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={COLORS.gray}
+                    color={COLORS.green[500]}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="Ingresa tu DNI o email"
-                    placeholderTextColor={COLORS.gray}
+                    placeholderTextColor={COLORS.green[500]}
                     value={values.dniOrEmail}
                     onChangeText={handleChange("dniOrEmail")}
                     onBlur={handleBlur("dniOrEmail")}
@@ -162,13 +162,13 @@ const LoginScreen = () => {
                   <Ionicons
                     name="lock-closed-outline"
                     size={20}
-                    color={COLORS.gray}
+                    color={COLORS.green[500]}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={[styles.input, { flex: 1 }]}
                     placeholder="Ingresa tu contraseña"
-                    placeholderTextColor={COLORS.gray}
+                    placeholderTextColor={COLORS.green[500]}
                     secureTextEntry={!isPasswordVisible}
                     value={values.password}
                     onChangeText={handleChange("password")}
@@ -184,7 +184,7 @@ const LoginScreen = () => {
                         isPasswordVisible ? "eye-off-outline" : "eye-outline"
                       }
                       size={20}
-                      color={COLORS.gray}
+                      color={COLORS.green[500]}
                     />
                   </TouchableOpacity>
                 </View>
@@ -310,10 +310,10 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   inputError: {
-    borderColor: COLORS.error,
+    borderColor: COLORS.status.error,
   },
   errorText: {
-    color: COLORS.error,
+    color: COLORS.status.error,
     fontSize: 12,
     marginTop: 5,
     marginLeft: 5,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonDisabled: {
-    backgroundColor: `${COLORS.primary}80`, // 50% opacity
+    backgroundColor: `${COLORS.primary}80`,
     shadowOpacity: 0,
   },
   buttonText: {
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 13,
     fontWeight: "500",
-    textShadowColor: COLORS.gray,
+    textShadowColor: COLORS.neutral[400],
     textShadowOffset: { width: 0, height: 0.5 },
     textShadowRadius: 1,
   },
@@ -360,10 +360,10 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: COLORS.neutral[300],
   },
   dividerText: {
-    color: COLORS.gray,
+    color: COLORS.neutral[600],
     paddingHorizontal: 10,
     fontSize: 14,
   },
@@ -373,14 +373,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   registerText: {
-    color: COLORS.gray,
+    color: COLORS.neutral[600],
     fontSize: 14,
   },
   registerLink: {
     color: COLORS.primary,
     fontSize: 14,
     fontWeight: "600",
-    textShadowColor: COLORS.gray,
+    textShadowColor: COLORS.neutral[400],
     textShadowOffset: { width: 0, height: 0.5 },
     textShadowRadius: 1,
   },
