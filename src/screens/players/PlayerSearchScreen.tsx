@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Alert,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types";
@@ -33,6 +34,8 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
   const loadPlayers = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('Cargando jugadores con filtros:', filters);
+      
       const response = await playerService.getPlayers(filters);
       const currentUserId = getCurrentUserId();
 
@@ -43,10 +46,12 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
           (!player.id || player.id !== currentUserId)
       );
 
+      console.log('Jugadores filtrados:', filteredPlayers);
       setPlayers(filteredPlayers);
     } catch (error) {
       console.error("Error al cargar jugadores:", error);
-      // Aquí podrías mostrar un mensaje de error al usuario
+      // Mostrar mensaje de error al usuario
+      Alert.alert("Error", "No se pudieron cargar los jugadores. Por favor, inténtalo de nuevo.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,11 +69,20 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
     if (searchText.trim() !== '' || filters.search) {
       // Establecer un nuevo timeout para buscar después de 500ms sin cambios
       const timeoutId = setTimeout(() => {
-        console.log("Buscando con texto:", searchText);
-        setFilters(prev => ({
-          ...prev,
-          search: searchText.trim() || undefined,
-        }));
+        console.log("Actualizando filtros con búsqueda:", searchText);
+        setFilters(prev => {
+          const newFilters = { ...prev };
+          
+          // Si el texto está vacío, eliminar el filtro de búsqueda
+          if (searchText.trim() === '') {
+            delete newFilters.search;
+          } else {
+            newFilters.search = searchText.trim();
+          }
+          
+          console.log('Nuevos filtros:', newFilters);
+          return newFilters;
+        });
       }, 500);
 
       setSearchTimeout(timeoutId);
@@ -87,7 +101,14 @@ const PlayerSearchScreen: React.FC<Props> = ({ navigation }) => {
     console.log("Filtros actualizados:", filters);
     // No mostrar el indicador de carga completo, solo el de la lista
     loadPlayers();
-  }, [filters]);
+    
+    // Limpiar el efecto cuando el componente se desmonte
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [filters, searchTimeout]);
 
   // Función para obtener el ID del usuario actual
   const getCurrentUserId = () => {

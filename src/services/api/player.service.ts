@@ -1,4 +1,4 @@
-import http from '../api';
+import api from '../api';
 
 interface PlayerFilters {
   category?: string;
@@ -16,21 +16,26 @@ const playerService = {
   async getPlayers(filters: PlayerFilters = {}) {
     try {
       console.log('Iniciando búsqueda con filtros:', filters);
-      // Construir parámetros de consulta
-      const params = new URLSearchParams();
       
-      // Agregar filtros solo si tienen valor
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
-          params.append(key, String(value));
-          console.log(`Agregando filtro: ${key}=${value}`);
-        }
-      });
-
-      const url = `/players?${params.toString()}`;
-      console.log('Realizando petición a:', url);
+      // Construir objeto de parámetros
+      const params: Record<string, string> = {};
       
-      const response = await http.get(url);
+      // Mapear los filtros al formato esperado por el backend
+      if (filters.search) params.search = filters.search;
+      if (filters.category) params.category = filters.category;
+      if (filters.level) params.level = filters.level;
+      if (filters.hand) params.hand = filters.hand;
+      if (filters.position) params.position = filters.position;
+      
+      console.log('Parámetros de búsqueda:', params);
+      
+      // Usar la instancia de api que ya tiene los interceptores configurados
+      const response = await api.get('/players', { params });
+      
+      // Verificar la respuesta
+      if (!response.data) {
+        throw new Error('No se recibieron datos en la respuesta');
+      }
       console.log('Respuesta recibida:', response.data);
       return response.data;
     } catch (error) {
@@ -45,7 +50,7 @@ const playerService = {
    */
   async getPlayerById(id: string) {
     try {
-      const response = await http.get(`/players/${id}`);
+      const response = await api.get(`/players/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener el jugador con ID ${id}:`, error);
@@ -61,9 +66,9 @@ const playerService = {
    */
   async votePlayer(playerId: string, voteType: 'upVotes' | 'downVotes', voterId: string) {
     try {
-      const response = await http.post(`/vote/${playerId}`, {
+      const response = await api.post(`/players/${playerId}/vote`, {
         voteType,
-        voterId
+        voterId,
       });
       return response.data;
     } catch (error) {

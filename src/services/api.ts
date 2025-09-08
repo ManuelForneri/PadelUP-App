@@ -56,11 +56,19 @@ const api = axios.create({
 // Interceptor para agregar token de autenticación
 api.interceptors.request.use(
   async (config) => {
+    // No intentar agregar el token para las rutas de autenticación
+    if (config.url?.startsWith('/auth/')) {
+      return config;
+    }
+
     try {
       const token = await storage.getItem('userToken');
+      console.log('Token obtenido para la petición:', token ? '***' : 'No hay token');
+      
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Token agregado al encabezado de autorización');
       }
       return config;
     } catch (error) {
@@ -85,7 +93,16 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
+    console.error('Error en la respuesta:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+
     if (error.response?.status === 401) {
+      console.log('Error 401 - No autorizado');
+      
       // Limpiar datos de autenticación usando el almacenamiento unificado
       try {
         const { deleteItemAsync } = isWeb 
@@ -96,10 +113,21 @@ api.interceptors.response.use(
           deleteItemAsync('userToken'),
           deleteItemAsync('userData')
         ]);
+        
+        console.log('Datos de autenticación eliminados debido a error 401');
+        
+        // Redirigir al login si estamos en la web
+        if (isWeb && typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
       } catch (storageError) {
         console.error('Error al limpiar datos de autenticación:', storageError);
       }
+      
+      // Rechazar con un error más descriptivo
+      return Promise.reject(new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.'));
     }
+    
     return Promise.reject(error);
   }
 );
@@ -132,5 +160,5 @@ const http = {
   },
 };
 
-export { http };
+// Exportar la instancia de axios configurada
 export default api;

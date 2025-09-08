@@ -108,17 +108,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const loadStoredData = async () => {
       try {
+        console.log('Cargando datos de autenticación guardados...');
         const [storedToken, storedUser] = await Promise.all([
           storage.getItem("userToken"),
           storage.getItem("userData")
         ]);
 
-        console.log('Datos almacenados cargados:', { storedToken, storedUser: storedUser ? 'existe' : 'no existe' });
+        console.log('Datos almacenados cargados:', { 
+          hasToken: !!storedToken, 
+          hasUserData: !!storedUser 
+        });
 
         if (storedToken && storedUser) {
-          api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          try {
+            console.log('Configurando token en los headers de Axios');
+            api.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+            setToken(storedToken);
+            
+            const parsedUser = JSON.parse(storedUser);
+            console.log('Usuario parseado correctamente');
+            setUser(parsedUser);
+          } catch (parseError) {
+            console.error('Error al analizar los datos del usuario:', parseError);
+            // Limpiar datos inválidos
+            await storage.removeItem("userData");
+            await storage.removeItem("userToken");
+          }
         }
       } catch (error) {
         console.error("Error al cargar los datos de autenticación:", error);
@@ -137,13 +152,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         dniOrEmail,
         password,
       });
+      
+      console.log('Respuesta completa del servidor:', response.data);
+      
+      // Verificar la estructura de la respuesta
+      if (!response.data || !response.data.token || !response.data.user) {
+        throw new Error('La respuesta del servidor no tiene el formato esperado');
+      }
+      
       const { token, user } = response.data;
-      console.log('Respuesta del servidor:', { token, user: user ? 'usuario recibido' : 'sin usuario' });
+      console.log('Token recibido:', token ? '***' : 'No hay token');
+      console.log('Usuario recibido:', user ? 'Sí' : 'No');
 
       // Guardar en el almacenamiento adecuado
-      await storage.setItem("userToken", token);
-      await storage.setItem("userData", JSON.stringify(user));
+      try {
+        await storage.setItem("userToken", token);
+        await storage.setItem("userData", JSON.stringify(user));
+        console.log('Datos guardados en el almacenamiento seguro');
+      } catch (storageError) {
+        console.error('Error al guardar en el almacenamiento:', storageError);
+        throw new Error('Error al guardar los datos de sesión');
+      }
 
+      // Configurar el token en los headers de axios
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       setToken(token);
       setUser(user);
