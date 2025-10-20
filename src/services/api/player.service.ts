@@ -1,10 +1,10 @@
-import api from '../api';
+import api from "../api";
 
 interface PlayerFilters {
   category?: string;
   level?: string;
-  hand?: 'Derecha' | 'Izquierda';
-  position?: 'Reves' | 'Drive';
+  hand?: "Derecha" | "Izquierda";
+  position?: "Reves" | "Drive";
   search?: string;
 }
 
@@ -15,31 +15,31 @@ const playerService = {
    */
   async getPlayers(filters: PlayerFilters = {}) {
     try {
-      console.log('Iniciando búsqueda con filtros:', filters);
-      
+      console.log("Iniciando búsqueda con filtros:", filters);
+
       // Construir objeto de parámetros
       const params: Record<string, string> = {};
-      
+
       // Mapear los filtros al formato esperado por el backend
       if (filters.search) params.search = filters.search;
       if (filters.category) params.category = filters.category;
       if (filters.level) params.level = filters.level;
       if (filters.hand) params.hand = filters.hand;
       if (filters.position) params.position = filters.position;
-      
-      console.log('Parámetros de búsqueda:', params);
-      
+
+      console.log("Parámetros de búsqueda:", params);
+
       // Usar la instancia de api que ya tiene los interceptores configurados
-      const response = await api.get('/players', { params });
-      
+      const response = await api.get("/players", { params });
+
       // Verificar la respuesta
       if (!response.data) {
-        throw new Error('No se recibieron datos en la respuesta');
+        throw new Error("No se recibieron datos en la respuesta");
       }
-      console.log('Respuesta recibida:', response.data);
+      console.log("Respuesta recibida:", response.data);
       return response.data;
     } catch (error) {
-      console.error('Error al obtener jugadores:', error);
+      console.error("Error al obtener jugadores:", error);
       throw error;
     }
   },
@@ -64,15 +64,19 @@ const playerService = {
    * @param voteType Tipo de voto ('upVotes' o 'downVotes')
    * @param voterId ID del usuario que está votando
    */
-  async votePlayer(playerId: string, voteType: 'upVotes' | 'downVotes', voterId: string) {
+  async votePlayer(
+    playerId: string,
+    voteType: "goodVotes" | "passVotes",
+    voterId: string
+  ) {
     try {
-      const response = await api.post(`/players/${playerId}/vote`, {
+      const response = await api.post(`/votes/${playerId}`, {
         voteType,
         voterId,
       });
       return response.data;
     } catch (error) {
-      console.error('Error al votar por el jugador:', error);
+      console.error("Error al votar por el jugador:", error);
       throw error;
     }
   },

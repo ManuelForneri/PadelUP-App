@@ -31,68 +31,73 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [hasVoted, setHasVoted] = useState<boolean>(false);
 
   // Función para manejar el voto
-  const handleVote = useCallback(async (voteType: "low" | "good" | "high") => {
-    if (!user?.id) {
-      Alert.alert("Error", "Debes iniciar sesión para poder votar.");
-      navigation.navigate("Login");
-      return;
-    }
-
-    if (!playerId) {
-      Alert.alert("Error", "No se pudo identificar al jugador a votar.");
-      return;
-    }
-
-    try {
-      setVoting(true);
-      
-      // Mapear los tipos de voto de la interfaz a los que espera el backend
-      const voteTypeMap = {
-        low: "upVotes",    // Si está bajo, necesita subir de categoría (upVote)
-        good: "good",      // Si está bien, no debería afectar la categoría
-        high: "downVotes"  // Si está alto, necesita bajar de categoría (downVote)
-      };
-
-      // Solo enviar el voto si no es "good" (que no afecta la categoría)
-      if (voteType !== "good") {
-        await playerService.votePlayer(
-          playerId,
-          voteTypeMap[voteType] as "upVotes" | "downVotes",
-          user.id
-        );
+  const handleVote = useCallback(
+    async (voteType: "bien" | "pasado") => {
+      if (!user?.id) {
+        Alert.alert("Error", "Debes iniciar sesión para poder votar.");
+        navigation.navigate("Login");
+        return;
       }
 
-      // Mostrar mensaje de confirmación
-      let message = "";
-      switch (voteType) {
-        case "high":
-          message =
-            "Has votado que el jugador está en una categoría más alta de lo que debería";
-          break;
-        case "good":
-          message = "Has votado que el jugador está en la categoría correcta";
-          break;
-        case "low":
-          message =
-            "Has votado que el jugador está en una categoría más baja de lo que debería";
-          break;
+      if (!playerId) {
+        Alert.alert("Error", "No se pudo identificar al jugador a votar.");
+        return;
       }
 
-      Alert.alert("Voto registrado", message, [
-        { text: "OK", onPress: () => navigation.goBack() }
-      ]);
-    } catch (error: any) {
-      console.error("Error al registrar el voto:", error);
-      
-      // Mostrar mensaje de error específico del backend si está disponible
-      const errorMessage = error.response?.data?.message || 
-                         "No se pudo registrar tu voto. Intenta de nuevo.";
-      
-      Alert.alert("Error", errorMessage);
-    } finally {
-      setVoting(false);
-    }
-  }, [user, playerId, navigation]);
+      try {
+        setVoting(true);
+
+        // Mapear los tipos de voto de la interfaz a los que espera el backend
+        const voteTypeMap = {
+          bien: "goodVotes", // Si está bien rankeado
+          pasado: "passVotes", // Deberia estar en una categoria mejor
+        };
+
+        // Solo enviar el voto si no es "good" (que no afecta la categoría)
+        if (voteType !== "bien") {
+          await playerService.votePlayer(
+            playerId,
+            voteTypeMap[voteType] as "goodVotes",
+            user.id
+          );
+        } else {
+          await playerService.votePlayer(
+            playerId,
+            voteTypeMap[voteType] as "passVotes",
+            user.id
+          );
+        }
+
+        // Mostrar mensaje de confirmación
+        let message = "";
+        switch (voteType) {
+          case "bien":
+            message = "Has votado que el jugador esta bien rankeado";
+            break;
+          case "pasado":
+            message =
+              "Has votado que el jugador está pasado (Categoria baja para el)";
+            break;
+        }
+
+        Alert.alert("Voto registrado", message, [
+          { text: "OK", onPress: () => navigation.goBack() },
+        ]);
+      } catch (error: any) {
+        console.error("Error al registrar el voto:", error);
+
+        // Mostrar mensaje de error específico del backend si está disponible
+        const errorMessage =
+          error.response?.data?.message ||
+          "No se pudo registrar tu voto. Intenta de nuevo.";
+
+        Alert.alert("Error", errorMessage);
+      } finally {
+        setVoting(false);
+      }
+    },
+    [user, playerId, navigation]
+  );
 
   // Cargar detalles del jugador al montar el componente
   useEffect(() => {
@@ -106,7 +111,7 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         if (response && response.data) {
           console.log("Datos completos del jugador:", response.data);
           setPlayer(response.data);
-          
+
           // Verificar si el usuario actual ya votó por este jugador
           if (user?.id && response.data.votes?.voters?.includes(user.id)) {
             setHasVoted(true);
@@ -200,10 +205,12 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               style={styles.avatar}
             />
           ) : (
-            <View style={[styles.avatar, { backgroundColor: COLORS.green[500] }]}>
+            <View
+              style={[styles.avatar, { backgroundColor: COLORS.green[500] }]}
+            >
               <Text style={styles.avatarText}>
                 {player.firstName.charAt(0)}
-                {player.lastName?.charAt(0) || ''}
+                {player.lastName?.charAt(0) || ""}
               </Text>
             </View>
           )}
@@ -223,13 +230,14 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.infoRow}>
           <Ionicons name="mail" size={20} color={COLORS.green[500]} />
           <Text style={styles.infoText} numberOfLines={1} ellipsizeMode="tail">
-            {player.email || 'No disponible'}
+            {player.email || "No disponible"}
           </Text>
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="calendar" size={20} color={COLORS.green[500]} />
           <Text style={styles.infoText}>
-            Miembro desde: {player.createdAt ? formatDate(player.createdAt) : 'No disponible'}
+            Miembro desde:{" "}
+            {player.createdAt ? formatDate(player.createdAt) : "No disponible"}
           </Text>
         </View>
       </View>
@@ -238,40 +246,47 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Características de Juego</Text>
         <View style={styles.infoRow}>
-          <Ionicons name={getHandIcon(player.hand || 'Derecha')} size={20} color={COLORS.green[500]} />
-          <Text style={styles.infoText}>Mano hábil: {player.hand || 'No especificado'}</Text>
+          <Ionicons
+            name={getHandIcon(player.hand || "Derecha")}
+            size={20}
+            color={COLORS.green[500]}
+          />
+          <Text style={styles.infoText}>
+            Mano hábil: {player.hand || "No especificado"}
+          </Text>
         </View>
         <View style={styles.infoRow}>
-          <Ionicons name={getPositionIcon(player.position || '')} size={20} color={COLORS.green[500]} />
-          <Text style={styles.infoText}>Posición preferida: {player.position || 'No especificada'}</Text>
+          <Ionicons
+            name={getPositionIcon(player.position || "")}
+            size={20}
+            color={COLORS.green[500]}
+          />
+          <Text style={styles.infoText}>
+            Posición preferida: {player.position || "No especificada"}
+          </Text>
         </View>
       </View>
 
       {/* Sección de votación */}
       {!hasVoted && user?.id !== player._id && (
         <View style={styles.votingSection}>
-          <Text style={styles.votingTitle}>¿Este jugador está en la categoría correcta?</Text>
+          <Text style={styles.votingTitle}>
+            ¿Este jugador está en la categoría correcta?
+          </Text>
           <View style={styles.votingButtons}>
             <TouchableOpacity
               style={[styles.voteButton, styles.voteButtonHigh]}
-              onPress={() => handleVote('high')}
+              onPress={() => handleVote("bien")}
               disabled={voting}
             >
-              <Text style={styles.voteButtonText}>Muy alto</Text>
+              <Text style={styles.voteButtonText}>Esta bien rankeado</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.voteButton, styles.voteButtonGood]}
-              onPress={() => handleVote('good')}
+              onPress={() => handleVote("pasado")}
               disabled={voting}
             >
-              <Text style={styles.voteButtonText}>Correcto</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.voteButton, styles.voteButtonLow]}
-              onPress={() => handleVote('low')}
-              disabled={voting}
-            >
-              <Text style={styles.voteButtonText}>Muy bajo</Text>
+              <Text style={styles.voteButtonText}>Esta pasado</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -279,8 +294,14 @@ const PlayerDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {hasVoted && (
         <View style={styles.votingMessage}>
-          <Ionicons name="checkmark-circle" size={24} color={COLORS.green[500]} />
-          <Text style={styles.votingMessageText}>¡Ya has votado por este jugador!</Text>
+          <Ionicons
+            name="checkmark-circle"
+            size={24}
+            color={COLORS.green[500]}
+          />
+          <Text style={styles.votingMessageText}>
+            ¡Ya has votado por este jugador!
+          </Text>
         </View>
       )}
     </ScrollView>
@@ -295,12 +316,12 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: COLORS.neutral[0],
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: 20,
     backgroundColor: COLORS.neutral[0],
     borderBottomWidth: 1,
@@ -313,35 +334,35 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarText: {
     ...TYPOGRAPHY.h1,
     color: COLORS.neutral[0],
     fontSize: 56,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
   },
   playerInfo: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   playerName: {
     ...TYPOGRAPHY.h1,
     fontSize: 28,
     color: COLORS.neutral[900],
     marginBottom: 5,
-    fontWeight: '700' as const,
+    fontWeight: "700" as const,
   },
   playerCategory: {
     ...TYPOGRAPHY.body1,
     color: COLORS.green[500],
     marginBottom: 5,
-    fontWeight: '500' as const,
+    fontWeight: "500" as const,
   },
   playerLevel: {
     ...TYPOGRAPHY.body2,
     color: COLORS.neutral[600],
-    fontWeight: '400' as const,
+    fontWeight: "400" as const,
   },
   section: {
     padding: 20,
@@ -352,18 +373,18 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h2,
     color: COLORS.green[600],
     marginBottom: 15,
-    fontWeight: '600' as const,
+    fontWeight: "600" as const,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
   infoText: {
     ...TYPOGRAPHY.body1,
     color: COLORS.neutral[800],
     marginLeft: 10,
-    fontWeight: '400' as const,
+    fontWeight: "400" as const,
   },
   votingSection: {
     padding: 20,
@@ -380,19 +401,19 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h3,
     color: COLORS.neutral[900],
     marginBottom: 15,
-    textAlign: 'center' as const,
-    fontWeight: '600' as const,
+    textAlign: "center" as const,
+    fontWeight: "600" as const,
   },
   votingButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   voteButton: {
     flex: 1,
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     marginHorizontal: 5,
   },
   voteButtonHigh: {
@@ -407,13 +428,13 @@ const styles = StyleSheet.create({
   voteButtonText: {
     ...TYPOGRAPHY.button,
     color: COLORS.neutral[0],
-    fontWeight: '500' as const,
-    textAlign: 'center' as const,
+    fontWeight: "500" as const,
+    textAlign: "center" as const,
   },
   votingMessage: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     padding: 15,
     backgroundColor: COLORS.green[50],
     margin: 15,
@@ -423,8 +444,8 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body1,
     color: COLORS.green[800],
     marginLeft: 10,
-    fontWeight: '500' as const,
-    textAlign: 'center' as const,
+    fontWeight: "500" as const,
+    textAlign: "center" as const,
   },
   iconContainer: {
     width: 36,
@@ -452,7 +473,7 @@ const styles = StyleSheet.create({
   statLabel: {
     ...TYPOGRAPHY.caption,
     color: COLORS.neutral[500],
-    textAlign: 'center',
+    textAlign: "center",
   },
   bioText: {
     ...TYPOGRAPHY.body1,
@@ -460,9 +481,9 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     ...TYPOGRAPHY.body2,
-    textAlign: 'center',
+    textAlign: "center",
     color: COLORS.neutral[500],
-    fontStyle: 'italic',
+    fontStyle: "italic",
     marginVertical: 20,
   },
   actionButton: {
