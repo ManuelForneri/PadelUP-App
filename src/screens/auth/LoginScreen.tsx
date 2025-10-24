@@ -1,27 +1,26 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Formik } from "formik";
 import React from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Formik } from "formik";
 import * as Yup from "yup";
 import { useAuth } from "../../context/AuthContext";
-import { RootStackParamList } from "../../types/navigation";
-import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-// Paleta de colores
+import { RootStackParamList } from "../../types/navigation";
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -96,8 +95,12 @@ const LoginScreen = () => {
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="tennisball" size={60} color={COLORS.primary} />
+            <Text style={styles.appName}>PADEL UP</Text>
           </View>
+          <Image
+            source={require("../../assets/images/logo-padelUP.jpg")}
+            style={styles.logo}
+          />
           <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
         </View>
 
@@ -129,13 +132,13 @@ const LoginScreen = () => {
                   <Ionicons
                     name="person-outline"
                     size={20}
-                    color={COLORS.green[500]}
+                    color={COLORS.neutral[500]}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={styles.input}
                     placeholder="Ingresa tu DNI o email"
-                    placeholderTextColor={COLORS.green[500]}
+                    placeholderTextColor={COLORS.neutral[400]}
                     value={values.dniOrEmail}
                     onChangeText={handleChange("dniOrEmail")}
                     onBlur={handleBlur("dniOrEmail")}
@@ -162,13 +165,13 @@ const LoginScreen = () => {
                   <Ionicons
                     name="lock-closed-outline"
                     size={20}
-                    color={COLORS.green[500]}
+                    color={COLORS.neutral[500]}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     style={[styles.input, { flex: 1 }]}
                     placeholder="Ingresa tu contraseña"
-                    placeholderTextColor={COLORS.green[500]}
+                    placeholderTextColor={COLORS.neutral[400]}
                     secureTextEntry={!isPasswordVisible}
                     value={values.password}
                     onChangeText={handleChange("password")}
@@ -184,7 +187,7 @@ const LoginScreen = () => {
                         isPasswordVisible ? "eye-off-outline" : "eye-outline"
                       }
                       size={20}
-                      color={COLORS.green[500]}
+                      color={COLORS.neutral[500]}
                     />
                   </TouchableOpacity>
                 </View>
@@ -204,13 +207,13 @@ const LoginScreen = () => {
 
               {/* Botón de Iniciar Sesión */}
               <TouchableOpacity
-                style={[styles.button, isLoading && styles.buttonDisabled]}
+                style={styles.button}
                 onPress={() => handleSubmit()}
                 disabled={isLoading}
                 activeOpacity={0.8}
               >
                 {isLoading ? (
-                  <ActivityIndicator color={COLORS.primary} size="small" />
+                  <ActivityIndicator color={COLORS.neutral[0]} size="small" />
                 ) : (
                   <Text style={styles.buttonText}>Iniciar Sesión</Text>
                 )}
@@ -219,7 +222,7 @@ const LoginScreen = () => {
               {/* Divider */}
               <View style={styles.dividerContainer}>
                 <View style={styles.divider} />
-                <Text style={styles.dividerText}>o</Text>
+                <View style={styles.dividerDot} />
                 <View style={styles.divider} />
               </View>
 
@@ -245,11 +248,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundPrimary,
+    paddingHorizontal: 24,
   },
 
   scrollContainer: {
     flexGrow: 1,
-    padding: 20,
+    paddingVertical: 40,
     justifyContent: "center",
   },
   header: {
@@ -258,19 +262,28 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 20,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 20,
   },
   appName: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-    marginTop: 10,
+    fontSize: 40,
+    color: "white",
+    marginTop: 20,
+    fontFamily: "Adoriademo",
+    textShadowColor: COLORS.green[700],
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
   subtitle: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: COLORS.neutral[600],
     textAlign: "center",
-    marginTop: 5,
+    marginBottom: 32,
   },
   formContainer: {
     width: "100%",
@@ -278,36 +291,40 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   label: {
     fontSize: 14,
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-    fontWeight: "500",
+    color: COLORS.neutral[900],
+    marginBottom: 10,
+    fontWeight: "600",
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.backgroundLight,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 50,
+    backgroundColor: COLORS.neutral[0],
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 56,
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: COLORS.neutral[200],
+    shadowColor: COLORS.neutral[900],
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   input: {
     flex: 1,
     height: "100%",
-    color: COLORS.textPrimary,
-    fontSize: 16,
-    paddingLeft: 10,
+    color: COLORS.neutral[900],
+    fontSize: 15,
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   eyeIcon: {
-    padding: 5,
+    padding: 6,
   },
   inputError: {
     borderColor: COLORS.status.error,
@@ -319,70 +336,66 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   button: {
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 10,
+    backgroundColor: COLORS.green[600],
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
+    marginTop: 8,
+    shadowColor: COLORS.green[300],
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 8,
   },
   buttonDisabled: {
     backgroundColor: `${COLORS.primary}80`,
     shadowOpacity: 0,
   },
   buttonText: {
-    color: COLORS.textDark,
+    color: COLORS.neutral[0],
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   forgotPassword: {
     alignSelf: "flex-end",
-    marginTop: 5,
+    marginTop: 12,
   },
   forgotPasswordText: {
-    color: COLORS.primary,
+    color: COLORS.green[600],
     fontSize: 13,
-    fontWeight: "500",
-    textShadowColor: COLORS.neutral[400],
-    textShadowOffset: { width: 0, height: 0.5 },
-    textShadowRadius: 1,
+    fontWeight: "600",
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 25,
+    marginVertical: 32,
   },
   divider: {
     flex: 1,
     height: 1,
     backgroundColor: COLORS.neutral[300],
   },
-  dividerText: {
-    color: COLORS.neutral[600],
-    paddingHorizontal: 10,
-    fontSize: 14,
+  dividerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.green[700],
+    marginHorizontal: 12,
   },
   registerContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 10,
+    marginTop: 8,
   },
   registerText: {
-    color: COLORS.neutral[600],
-    fontSize: 14,
+    color: COLORS.neutral[500],
+    fontSize: 13,
   },
   registerLink: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: "600",
-    textShadowColor: COLORS.neutral[400],
-    textShadowOffset: { width: 0, height: 0.5 },
-    textShadowRadius: 1,
+    color: COLORS.green[600],
+    fontSize: 13,
+    fontWeight: "700",
   },
 });
 

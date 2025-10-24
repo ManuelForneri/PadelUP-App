@@ -1,11 +1,21 @@
-import React, { useEffect } from "react";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
-import { Alert, AppState, AppStateStatus } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  AppState,
+  AppStateStatus,
+  StyleSheet,
+  View,
+} from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "./src/context/AuthContext";
 import AppNavigator from "./src/navigation/AppNavigator";
+
+SplashScreen.preventAutoHideAsync();
 
 async function checkForUpdates() {
   if (__DEV__) {
@@ -40,11 +50,19 @@ async function checkForUpdates() {
 }
 
 export default function App() {
-  // Verificar actualizaciones al montar la aplicación
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  const [loaded, error] = useFonts({
+    Adoriademo: require("./src/assets/fonts/Adoriademo.otf"),
+  });
+
   useEffect(() => {
     checkForUpdates();
 
-    // Opcional: Verificar actualizaciones cada vez que la app vuelva a primer plano
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+
     const subscription = AppState.addEventListener(
       "change",
       (nextAppState: AppStateStatus) => {
@@ -54,23 +72,33 @@ export default function App() {
       }
     );
 
-    // Limpiar el event listener cuando el componente se desmonte
     return () => {
-      // Intentamos usar la nueva API primero
       if (typeof subscription?.remove === "function") {
         subscription.remove();
       }
     };
-  }, []);
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
+    <View style={styles.container}>
+      <SafeAreaProvider>
         <NavigationContainer>
-          <StatusBar style="auto" />
-          <AppNavigator />
+          <AuthProvider>
+            <AppNavigator />
+            <StatusBar style="auto" />
+          </AuthProvider>
         </NavigationContainer>
-      </AuthProvider>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
