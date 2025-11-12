@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
+import AntDesign from "@expo/vector-icons/AntDesign";
 
 // Definición de tipos
 type HeaderProps = {
@@ -26,8 +27,8 @@ const Header: React.FC<HeaderProps> = ({
         <Text style={styles.subtitle}>Encuentra tu próximo partido</Text>
         <Text style={styles.date}>{currentDate}</Text>
       </View>
-      <TouchableOpacity onPress={onProfilePress} style={styles.profileButton}>
-        <Ionicons name="person-circle" size={40} color={COLORS.primary} />
+      <TouchableOpacity>
+        <AntDesign name="trophy" size={24} color="black" />
       </TouchableOpacity>
     </View>
   );

@@ -8,18 +8,22 @@ import {
   Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "../../../types";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { BottomTabParamList } from "../../navigation/BottomTabNavigator";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import Header from "../../components/home/Header";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.85;
 const CARD_MARGIN = 15;
 const CONTAINER_PADDING = 20;
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
+type HomeScreenNavigationProp = BottomTabNavigationProp<
+  BottomTabParamList,
+  "Home"
+>;
 
 interface Match {
   id: number;
@@ -179,7 +183,7 @@ const HomeScreen = () => {
     </View>
   );
   const handleProfilePress = () => {
-    navigation.navigate("Profile");
+    navigation.navigate("Perfil");
   };
 
   return (
@@ -194,100 +198,23 @@ const HomeScreen = () => {
         {/* Search Bar */}
         <TouchableOpacity
           style={styles.searchBar}
-          onPress={() => navigation.navigate("PlayerSearch")}
+          onPress={() => {
+            // Navegar al stack navigator padre
+            const parent = navigation.getParent();
+            if (parent) {
+              parent.navigate("PlayerSearch");
+            }
+          }}
         >
           <Ionicons name="search" size={20} color={COLORS.gray} />
-          <Text style={styles.searchText}>
-            Buscar jugadores, torneos, canchas...
-          </Text>
+          <Text style={styles.searchText}>Buscar jugadores ...</Text>
         </TouchableOpacity>
-
-        {/* Upcoming Matches */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Próximos Partidos</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>Ver todos</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.horizontalScrollContent}
-          >
-            {upcomingMatches.map(renderMatchCard)}
-          </ScrollView>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.quickActionButton}>
-            <View
-              style={[
-                styles.quickActionIcon,
-                { backgroundColor: "rgba(0, 166, 153, 0.1)" },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="calendar-plus"
-                size={24}
-                color={COLORS.secondary}
-              />
-            </View>
-            <Text style={styles.quickActionText}>Nuevo Partido</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.quickActionButton}>
-            <View
-              style={[
-                styles.quickActionIcon,
-                { backgroundColor: "rgba(255, 90, 95, 0.1)" },
-              ]}
-            >
-              <Ionicons name="tennisball" size={24} color={COLORS.primary} />
-            </View>
-            <Text style={styles.quickActionText}>Unirse a Partido</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Available Courts */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Canchas Disponibles</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>Ver todas</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.courtsGrid}>
-            {availableCourts.slice(0, 2).map(renderCourtCard)}
-          </View>
-        </View>
-
-        {/* Upcoming Tournaments */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Próximos Torneos</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>Ver todos</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.horizontalScrollContent}
-          >
-            {upcomingTournaments.map(renderTournamentCard)}
-          </ScrollView>
-        </View>
-
         {/* Local Ranking */}
         <View style={[styles.section, { marginBottom: 30 }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Ranking Local</Text>
+            <Text style={styles.sectionTitle}>Buscate en el ranking</Text>
             <TouchableOpacity>
-              <Text style={styles.seeAll}>Ver ranking completo</Text>
+              <FontAwesome5 name="search" size={24} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
           <View style={styles.rankingContainer}>
@@ -309,6 +236,23 @@ const HomeScreen = () => {
                 </View>
               </View>
             ))}
+          </View>
+          {/* Upcoming Tournaments */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Próximos Torneos</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAll}>Ver todos</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.horizontalScrollContent}
+            >
+              {upcomingTournaments.map(renderTournamentCard)}
+            </ScrollView>
           </View>
         </View>
       </ScrollView>

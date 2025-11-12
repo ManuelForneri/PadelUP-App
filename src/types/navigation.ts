@@ -1,7 +1,8 @@
 // frontend/src/types/navigation.ts
 export type RootStackParamList = {
+  MainTabs: undefined;
   Login: undefined;
   Register: undefined;
-  Home: undefined;
-  // Agrega más rutas según sea necesario
+  PlayerSearch: undefined;
+  PlayerDetails: { playerId: string };
 };

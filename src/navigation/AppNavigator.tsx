@@ -4,12 +4,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import LoginScreen from "../screens/auth/LoginScreen";
 import RegisterScreen from "../screens/auth/RegisterScreen";
-import HomeScreen from "../screens/home/HomeScreen";
-import ProfileScreen from "../screens/profile/ProfileScreen";
 import PlayerSearchScreen from "../screens/players/PlayerSearchScreen";
 import { RootStackParamList } from "../../types";
 import { ActivityIndicator, View } from "react-native";
 import PlayerDetailsScreen from "../screens/players/PlayerDetailsScreen";
+import BottomTabNavigator from "./BottomTabNavigator";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -42,14 +41,9 @@ const AppNavigator = () => {
         // Usuario autenticado
         <>
           <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: "Inicio" }}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{ title: "Mi Perfil" }}
+            name="MainTabs"
+            component={BottomTabNavigator}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="PlayerSearch"

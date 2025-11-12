@@ -62,6 +62,11 @@ export const COLORS = {
   primary: "#79f55e",
   primaryLight: "#b8e8a3",
   primaryDark: "#3e8c2c",
+  secondary: "#00a699", // Turquesa/verde azulado
+  success: "#4caf50",
+  error: "#f44336",
+  warning: "#ff9800",
+  gray: "#868e96",
 
   textPrimary: "#212529",
   textSecondary: "#495057",

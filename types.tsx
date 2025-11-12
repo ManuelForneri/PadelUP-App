@@ -1,8 +1,7 @@
 export type RootStackParamList = {
-  Home: undefined;
+  MainTabs: undefined;
   Login: undefined;
   Register: undefined;
-  Profile: undefined;
   PlayerSearch: undefined;
   PlayerDetails: { playerId: string };
 };
