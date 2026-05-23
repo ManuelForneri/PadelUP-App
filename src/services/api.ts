@@ -3,12 +3,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { User, CompleteProfilePayload, UpdateUserPayload } from "../types/user";
 import { Tournament } from "../types/tournament";
 
-const API_BASE_URL = "https://overformed-laverne-nondiffuse.ngrok-free.dev";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
 export const TOKEN_KEY = "@padelup_token";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -26,13 +27,25 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+// Response interceptor — logout on 401 (token expired or invalid)
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      await AsyncStorage.removeItem(TOKEN_KEY);
+    }
+    return Promise.reject(error);
+  },
+);
+
 // ─── Auth Endpoints ────────────────────────────────────────────────────────────
 
 /**
- * Returns the URL to open in the browser for Google OAuth.
+ * Returns the Google OAuth URL with the given redirect URI.
  * The backend redirects to padelup://auth/callback?token=<jwt> after success.
  */
-export const getGoogleAuthUrl = (): string => `${API_BASE_URL}/auth/google`;
+export const getGoogleAuthUrl = (redirectUri: string): string =>
+  `${API_BASE_URL}/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
 
 /** Fetch the authenticated user's data (requires valid JWT). */
 export const getMe = async (): Promise<User> => {

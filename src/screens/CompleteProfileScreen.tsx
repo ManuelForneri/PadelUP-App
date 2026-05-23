@@ -16,6 +16,7 @@ import DateTimePicker, {
 import { useAuth } from "../context/AuthContext";
 import { completeProfile } from "../services/api";
 import { CourtSide, DominantHand } from "../types/user";
+import { toISODate, toDisplayDate } from "../utils/date";
 
 type PickerOption<T> = { label: string; value: T };
 
@@ -29,22 +30,6 @@ const DOMINANT_HAND_OPTIONS: PickerOption<DominantHand>[] = [
   { label: "Derecha", value: "DERECHA" },
   { label: "Izquierda", value: "IZQUIERDA" },
 ];
-
-/** Formatea un Date objeto a string "YYYY-MM-DD" para la API */
-function toISODate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-/** Formatea un Date objeto a string legible "DD/MM/YYYY" para mostrar */
-function toDisplayDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${d}/${m}/${y}`;
-}
 
 function SegmentedPicker<T extends string>({
   options,

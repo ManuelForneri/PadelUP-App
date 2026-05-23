@@ -8,29 +8,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import { UserCategory } from "../types/user";
-
-const CATEGORY_COLORS: Record<UserCategory, string> = {
-  PRIMERA: "#FFD700",
-  SEGUNDA: "#C0C0C0",
-  TERCERA: "#CD7F32",
-  CUARTA: "#00D9A6",
-  QUINTA: "#007AFF",
-  SEXTA: "#8B5CF6",
-  SEPTIMA: "#EF4444",
-  OCTAVA: "#6B7280",
-};
-
-const CATEGORY_LABELS: Record<UserCategory, string> = {
-  PRIMERA: "1ª División",
-  SEGUNDA: "2ª División",
-  TERCERA: "3ª División",
-  CUARTA: "4ª División",
-  QUINTA: "5ª División",
-  SEXTA: "6ª División",
-  SEPTIMA: "7ª División",
-  OCTAVA: "8ª División",
-};
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "../constants/player";
+import { formatISODate } from "../utils/date";
 
 interface InfoRowProps {
   label: string;
@@ -56,12 +35,6 @@ export default function ProfileScreen() {
   const categoryLabel = user.category
     ? CATEGORY_LABELS[user.category]
     : "Sin asignar";
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return null;
-    const [year, month, day] = dateStr.split("T")[0].split("-");
-    return `${day}/${month}/${year}`;
-  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -128,7 +101,7 @@ export default function ProfileScreen() {
         />
         <InfoRow
           label="Fecha de nacimiento"
-          value={formatDate(user.birth_date)}
+          value={formatISODate(user.birth_date)}
         />
         <InfoRow label="Teléfono" value={user.phone} />
       </View>
@@ -144,7 +117,7 @@ export default function ProfileScreen() {
           value={user.status === "ACTIVE" ? "Activo" : "Pendiente"}
         />
         <InfoRow label="Email" value={user.email} />
-        <InfoRow label="Miembro desde" value={formatDate(user.created_at)} />
+        <InfoRow label="Miembro desde" value={formatISODate(user.created_at)} />
       </View>
 
       {/* Logout */}

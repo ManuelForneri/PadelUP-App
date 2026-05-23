@@ -6,18 +6,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Image,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
-import { getMe, TOKEN_KEY } from "../services/api";
-import { User } from "../types/user";
+import { getMe, getGoogleAuthUrl, TOKEN_KEY } from "../services/api";
 
 WebBrowser.maybeCompleteAuthSession();
-
-const API_BASE_URL = "https://overformed-laverne-nondiffuse.ngrok-free.dev";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -27,7 +23,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       const redirectUrl = Linking.createURL("auth/callback");
-      const authUrl = `${API_BASE_URL}/auth/google?redirect_uri=${encodeURIComponent(redirectUrl)}`;
+      const authUrl = getGoogleAuthUrl(redirectUrl);
 
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
